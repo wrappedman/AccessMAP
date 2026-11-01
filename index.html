@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b131c">
+  <title>Sentinel — Access Map Builder</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div id="acs-builder-app" class="acs-app-container">
+    <header class="acs-app-header">
+      <div class="acs-app-brand">
+        <div class="acs-app-brand-mark" aria-hidden="true"><svg viewBox="0 0 40 40" fill="none"><path d="M20 3 35 9v11c0 10-6.5 15-15 18C11.5 35 5 30 5 20V9L20 3Z" stroke="currentColor" stroke-width="2"/><path d="m13 20 5 5 10-11" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div><div class="acs-app-brand-name">SENTINEL<span class="acs-app-brand-dot">.</span></div><div class="acs-app-brand-caption">ACCESS MAP BUILDER</div></div>
+      </div>
+      <div class="acs-app-header-divider"></div>
+      <div class="acs-app-floor-control"><span class="acs-app-field-label">ACTIVE FLOOR</span><div class="acs-app-select-wrap"><select id="acs-floor-select" class="acs-app-floor-select" aria-label="Active floor"><option value="1">Floor 1 — Ground</option><option value="2">Floor 2 — Operations</option><option value="3">Floor 3 — Executive</option></select><span class="acs-app-chevron" aria-hidden="true">⌄</span></div></div>
+      <div class="acs-app-header-spacer"></div>
+      <div class="acs-app-header-actions">
+        <button id="acs-lock-all" class="acs-app-button acs-app-button-subtle" type="button"><span class="acs-app-button-icon">🔒</span> Lock All Doors</button>
+        <button id="acs-unlock-all" class="acs-app-button acs-app-button-subtle" type="button"><span class="acs-app-button-icon">🔓</span> Unlock All Doors</button>
+        <span class="acs-app-action-divider"></span>
+        <button id="acs-breach" class="acs-app-button acs-app-button-danger" type="button"><span class="acs-app-button-icon">⚡</span> Trigger Security Breach</button>
+        <button id="acs-track" class="acs-app-button acs-app-button-subtle" type="button"><span class="acs-app-button-icon">◎</span> Simulate User Tracking</button>
+        <button id="acs-save" class="acs-app-button acs-app-button-primary" type="button">Save Config <span aria-hidden="true">↗</span></button>
+      </div>
+    </header>
+
+    <aside class="acs-app-sidebar acs-app-sidebar-left" aria-label="Toolbox">
+      <div class="acs-app-sidebar-heading"><div><div class="acs-app-eyebrow">WORKSPACE</div><h2 class="acs-app-panel-title">Toolbox</h2></div><span class="acs-app-heading-symbol" aria-hidden="true">⊞</span></div>
+      <div class="acs-app-sidebar-content">
+        <section class="acs-app-section"><div class="acs-app-section-heading"><span>FLOOR PLAN</span><span class="acs-app-section-index">01</span></div>
+          <label for="acs-upload" class="acs-app-upload"><span class="acs-app-upload-icon" aria-hidden="true">↑</span><span class="acs-app-upload-title">Upload floor plan</span><span class="acs-app-upload-hint">PNG, JPG, WEBP or SVG</span></label>
+          <input id="acs-upload" class="acs-app-visually-hidden" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml">
+          <p class="acs-app-helper">Your plan is stored locally in this browser.</p>
+        </section>
+        <section class="acs-app-section"><div class="acs-app-section-heading"><span>PLACE ELEMENTS</span><span class="acs-app-section-index">02</span></div>
+          <p class="acs-app-section-description">Drag a device onto the floor plan.</p>
+          <div id="acs-palette" class="acs-app-palette"></div>
+        </section>
+        <section class="acs-app-section acs-app-tips"><div class="acs-app-section-heading"><span>QUICK GUIDE</span><span class="acs-app-section-index">03</span></div>
+          <div class="acs-app-tip"><span class="acs-app-tip-number">01</span><span>Drag devices to place them on the map</span></div>
+          <div class="acs-app-tip"><span class="acs-app-tip-number">02</span><span>Click any device to edit its properties</span></div>
+          <div class="acs-app-tip"><span class="acs-app-tip-number">03</span><span>Use the top bar to run live scenarios</span></div>
+        </section>
+      </div>
+      <div class="acs-app-sidebar-footer"><span class="acs-app-status-light"></span> SYSTEM OPERATIONAL <span class="acs-app-footer-version">v1.0</span></div>
+    </aside>
+
+    <main class="acs-app-workspace">
+      <div class="acs-app-workspace-heading"><div><div class="acs-app-eyebrow">BUILDING A <span class="acs-app-breadcrumb">/</span> <span id="acs-floor-crumb">GROUND FLOOR</span></div><h1 class="acs-app-workspace-title">Floor plan overview</h1></div><div class="acs-app-live-pill"><span class="acs-app-live-dot"></span> LIVE EDITOR</div></div>
+      <div class="acs-app-map-frame"><div class="acs-app-map-topbar"><div class="acs-app-map-title"><span class="acs-app-map-icon">▦</span> <span id="acs-map-name">GROUND FLOOR / LEVEL 01</span></div><div class="acs-app-map-meta"><span id="acs-device-count">0 DEVICES</span><span class="acs-app-meta-divider"></span><span id="acs-map-dimensions">1400 × 900 PX</span></div></div>
+        <div id="acs-scroll-area" class="acs-app-scroll-area"><div id="acs-canvas" class="acs-app-canvas" aria-label="Floor plan canvas"><div id="acs-elements" class="acs-app-elements"></div><svg id="acs-path-overlay" class="acs-app-path-overlay" aria-hidden="true"></svg></div></div>
+        <div class="acs-app-map-footer"><span><span class="acs-app-footer-key">✦</span> Drag devices from the toolbox to get started</span><span>SCROLL TO EXPLORE <span aria-hidden="true">↗</span></span></div>
+      </div>
+      <div class="acs-app-workspace-bottom"><div><span class="acs-app-status-light"></span><span id="acs-status-text">All systems nominal</span></div><span>CONFIGURATION STORED LOCALLY <span class="acs-app-bottom-separator">/</span> AUTO-SAVE ON</span></div>
+      <div id="acs-tracking-log" class="acs-app-tracking-log acs-app-hidden" aria-live="polite"><div class="acs-app-tracking-header"><span><span class="acs-app-tracking-pulse"></span> PERSONNEL TRACKING</span><button id="acs-close-tracking" class="acs-app-icon-button" type="button" aria-label="Close tracking log">×</button></div><div class="acs-app-tracking-person"><div class="acs-app-avatar">JD</div><div><strong>Jordan Davis</strong><small>EMPLOYEE ID · 4829</small></div><span class="acs-app-tracking-active">ACTIVE</span></div><div id="acs-tracking-entries" class="acs-app-tracking-entries"></div></div>
+    </main>
+
+    <aside class="acs-app-sidebar acs-app-sidebar-right" aria-label="Properties panel"><div class="acs-app-sidebar-heading"><div><div class="acs-app-eyebrow">INSPECTOR</div><h2 class="acs-app-panel-title">Properties</h2></div><span class="acs-app-heading-symbol" aria-hidden="true">⚙</span></div><div id="acs-properties" class="acs-app-properties"></div><div class="acs-app-sidebar-footer acs-app-properties-footer">SELECT A DEVICE TO CONFIGURE</div></aside>
+
+    <div id="acs-toast-region" class="acs-app-toast-region" aria-live="polite"></div>
+    <div id="acs-camera-modal" class="acs-app-modal acs-app-hidden" role="dialog" aria-modal="true" aria-labelledby="acs-camera-title"><div class="acs-app-modal-card"><div class="acs-app-modal-header"><div><div class="acs-app-eyebrow">LIVE SURVEILLANCE</div><h2 id="acs-camera-title" class="acs-app-modal-title">Camera feed</h2></div><button id="acs-close-modal" class="acs-app-icon-button acs-app-modal-close" type="button" aria-label="Close camera feed">×</button></div><div class="acs-app-video"><div class="acs-app-video-scene"><div class="acs-app-video-hall"></div><div class="acs-app-video-door"></div><div class="acs-app-video-floor"></div><div class="acs-app-video-person"></div></div><div class="acs-app-video-grid"></div><div class="acs-app-video-scan"></div><div class="acs-app-video-rec"><span class="acs-app-rec-dot"></span> REC</div><div class="acs-app-video-crosshair">＋</div><div id="acs-video-time" class="acs-app-video-time"></div><div class="acs-app-video-label">CAM  /  LIVE FEED</div></div><div class="acs-app-modal-footer"><span><span class="acs-app-status-light"></span> ENCRYPTED CONNECTION</span><span>SIMULATED FEED · DEMO MODE</span></div></div></div>
+  </div>
+</body>
+</html>
