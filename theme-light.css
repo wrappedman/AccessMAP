@@ -55,3 +55,7 @@
 .acs-app-event-locate{border:0;background:transparent;color:#1998a8;font:700 9px "ACS Vazirmatn",Tahoma,Arial,sans-serif;cursor:pointer;white-space:nowrap}.acs-app-event-locate:hover{text-decoration:underline}
 .acs-app-modal-offline .acs-app-video-scene{filter:blur(4px) grayscale(1);opacity:.35}.acs-app-modal-offline .acs-app-video:after{content:"ارتباط با دوربین قطع است";position:absolute;inset:0;display:grid;place-items:center;background:#071c22aa;color:#fff;font:800 18px "ACS Vazirmatn",Tahoma,Arial,sans-serif;pointer-events:none}
 .acs-app-device-state-indicator{display:inline-block;margin-left:3px;font-size:10px;line-height:1;vertical-align:middle}
+
+/* Manual save indicator for the editor header. */
+.acs-app-save-indicator{display:inline-block;width:7px;height:7px;margin-right:7px;border-radius:50%;background:#ed5b6e;box-shadow:0 0 0 3px #ed5b6e2e}
+.acs-app-button-attention{box-shadow:0 0 0 3px #38bdd03d,0 8px 20px #38bdd026}
