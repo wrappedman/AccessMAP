@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f5fa">
+  <title>بعد پنجم | نمایش نقشه کنترل دسترسی</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="theme-light.css">
+  <link rel="stylesheet" href="viewer.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div id="acs-builder-app" class="acs-app-container acs-app-viewer" data-mode="viewer" dir="rtl">
+    <header class="acs-app-header">
+      <div class="acs-app-brand">
+        <div class="acs-app-brand-mark" aria-hidden="true"><svg viewBox="0 0 40 40" fill="none"><path d="M20 3 35 9v11c0 10-6.5 15-15 18C11.5 35 5 30 5 20V9L20 3Z" stroke="currentColor" stroke-width="2"/><path d="m13 20 5 5 10-11" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div><div class="acs-app-brand-name">بعد پنجم<span class="acs-app-brand-dot">.</span></div><div class="acs-app-brand-caption">سامانه نقشه کنترل دسترسی</div></div>
+      </div>
+      <div class="acs-app-header-divider"></div>
+      <div class="acs-app-floor-control"><span class="acs-app-field-label">طبقه فعال</span><div class="acs-app-select-wrap"><select id="acs-floor-select" class="acs-app-visually-hidden" aria-hidden="true" tabindex="-1"><option value="1">طبقه ۱ — همکف</option><option value="2">طبقه ۲ — عملیاتی</option><option value="3">طبقه ۳ — مدیریت</option></select><button id="acs-floor-trigger" class="acs-app-floor-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="acs-floor-menu"><span id="acs-floor-label">طبقه ۱ — همکف</span><svg class="acs-app-floor-arrow" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div id="acs-floor-menu" class="acs-app-floor-menu acs-app-hidden" role="listbox" aria-label="انتخاب طبقه"><button class="acs-app-floor-option" type="button" role="option" data-floor="1" aria-selected="true">طبقه ۱ — همکف</button><button class="acs-app-floor-option" type="button" role="option" data-floor="2" aria-selected="false">طبقه ۲ — عملیاتی</button><button class="acs-app-floor-option" type="button" role="option" data-floor="3" aria-selected="false">طبقه ۳ — مدیریت</button></div></div></div>
+      <div class="acs-app-header-spacer"></div>
+      <div class="acs-app-header-actions">
+        <button id="acs-lock-all" class="acs-app-button acs-app-button-subtle" type="button"><span class="acs-app-button-icon">🔒</span> قفل کردن همه درها</button>
+        <button id="acs-unlock-all" class="acs-app-button acs-app-button-subtle" type="button"><span class="acs-app-button-icon">🔓</span> باز کردن همه درها</button>
+        <span class="acs-app-action-divider"></span>
+        <span class="acs-app-mode-pill"><span class="acs-app-mode-dot" aria-hidden="true"></span> حالت نمایشی · فقط مشاهده</span>
+        <button id="acs-track" class="acs-app-button acs-app-button-subtle" type="button"><span class="acs-app-button-icon">◎</span> شبیه‌سازی ردیابی</button>
+        <a class="acs-app-button acs-app-button-subtle acs-app-view-link" href="index.html" title="بازگشت به ویرایشگر نقشه"><span class="acs-app-button-icon">✎</span> ویرایشگر ↗</a>
+      </div>
+    </header>
+
+    <main class="acs-app-workspace">
+      <div class="acs-app-workspace-heading"><div><div class="acs-app-eyebrow">ساختمان الف <span class="acs-app-breadcrumb">/</span> <span id="acs-floor-crumb">طبقه همکف</span></div><h1 class="acs-app-workspace-title">نمای زنده نقشه طبقه</h1></div><div class="acs-app-live-pill"><span class="acs-app-live-dot"></span> نمایش زنده</div></div>
+      <div class="acs-app-map-frame"><div class="acs-app-map-topbar"><div class="acs-app-map-title"><span class="acs-app-map-icon">▦</span> <span id="acs-map-name">طبقه همکف / سطح ۰۱</span></div><div class="acs-app-map-meta"><button id="acs-fullscreen" class="acs-app-fullscreen-button" type="button" aria-label="تمام‌صفحه کردن نقشه" title="تمام‌صفحه کردن نقشه">⛶ <span id="acs-fullscreen-label">تمام‌صفحه</span></button><span id="acs-device-count">۰ تجهیز</span><span id="acs-presence-count" class="acs-app-presence-count">۰ نفر حاضر</span><span class="acs-app-meta-divider"></span><span id="acs-map-dimensions">۱۴۰۰ × ۹۰۰ پیکسل</span></div></div>
+        <div id="acs-scroll-area" class="acs-app-scroll-area"><div id="acs-canvas" class="acs-app-canvas" aria-label="بوم نقشه طبقه"><div id="acs-elements" class="acs-app-elements"></div><svg id="acs-path-overlay" class="acs-app-path-overlay" aria-hidden="true"></svg><div id="acs-device-menu" class="acs-app-device-menu acs-app-hidden" role="group" aria-label="تغییر وضعیت تجهیز"></div><div id="acs-person-marker" class="acs-app-person-marker acs-app-hidden" aria-live="polite"></div></div></div>
+        <div class="acs-app-map-footer"><span><span class="acs-app-footer-key">✦</span> برای دیدن جزئیات، روی هر تجهیز روی نقشه کلیک کنید</span><span>برای مشاهده بیشتر پیمایش کنید <span aria-hidden="true">↗</span></span></div>
+      </div>
+      <div class="acs-app-workspace-bottom"><div><span class="acs-app-status-light"></span><span id="acs-status-text">همه سامانه‌ها در وضعیت عادی هستند</span></div><span>حالت نمایشی <span class="acs-app-bottom-separator">/</span> تغییرات این صفحه ذخیره نمی‌شود</span></div>
+      <div id="acs-tracking-log" class="acs-app-tracking-log acs-app-hidden" aria-live="polite"><div class="acs-app-tracking-header"><span><span class="acs-app-tracking-pulse"></span> ردیابی پرسنل</span><button id="acs-close-tracking" class="acs-app-icon-button" type="button" aria-label="بستن گزارش ردیابی">×</button></div><div class="acs-app-tracking-person"><div id="acs-tracking-avatar" class="acs-app-avatar">عق</div><div><strong id="acs-tracking-name">علیرضا قورچیان</strong><small id="acs-tracking-id">شماره پرسنلی · ۴۸۲۹</small></div><span class="acs-app-tracking-active">فعال</span></div><div id="acs-tracking-entries" class="acs-app-tracking-entries"></div></div>
+    </main>
+
+    <aside class="acs-app-sidebar acs-app-sidebar-right" aria-label="پنل پایش"><div class="acs-app-sidebar-heading"><div><div class="acs-app-eyebrow">پایش زنده</div><h2 class="acs-app-panel-title">مرکز کنترل</h2></div><span class="acs-app-heading-symbol" aria-hidden="true">⚙</span></div>
+      <div class="acs-app-panel-tabs" role="tablist" aria-label="بخش‌های مرکز کنترل"><button id="acs-tab-properties" class="acs-app-panel-tab acs-app-panel-tab-active" type="button" role="tab" aria-selected="true" aria-controls="acs-properties">تجهیزات</button><button id="acs-tab-personnel" class="acs-app-panel-tab" type="button" role="tab" aria-selected="false" aria-controls="acs-personnel-panel">افراد حاضر</button><button id="acs-tab-events" class="acs-app-panel-tab" type="button" role="tab" aria-selected="false" aria-controls="acs-events-panel">هشدارها <span id="acs-alert-count" class="acs-app-tab-badge acs-app-hidden">۰</span></button></div>
+      <div id="acs-properties" class="acs-app-properties" role="tabpanel" aria-labelledby="acs-tab-properties"></div>
+      <div id="acs-personnel-panel" class="acs-app-monitor-panel acs-app-hidden" role="tabpanel" aria-labelledby="acs-tab-personnel"><div class="acs-app-monitor-head"><strong>افراد حاضر در مجموعه</strong><span id="acs-personnel-total" class="acs-app-count-pill">۰ نفر</span></div><label class="acs-app-search-wrap"><span aria-hidden="true">⌕</span><input id="acs-person-search" class="acs-app-person-search" type="search" placeholder="جستجوی نام، کد یا واحد…" aria-label="جستجوی افراد حاضر"></label><div id="acs-person-detail" class="acs-app-person-detail acs-app-hidden"></div><div id="acs-person-list" class="acs-app-person-list"></div></div>
+      <div id="acs-events-panel" class="acs-app-monitor-panel acs-app-hidden" role="tabpanel" aria-labelledby="acs-tab-events"><div class="acs-app-monitor-head"><strong>مرکز هشدار و رویدادها</strong><span class="acs-app-count-pill">فقط مشاهده</span></div><p class="acs-app-monitor-help">هشدارهای ثبت‌شده در سامانه را اینجا دنبال کنید.</p><div class="acs-app-monitor-subheading"><span>گزارش رویدادها</span></div><div id="acs-event-list" class="acs-app-event-list"></div></div>
+      <div class="acs-app-sidebar-footer acs-app-properties-footer">اطلاعات نمونه · حالت نمایشی</div></aside>
+
+    <div id="acs-toast-region" class="acs-app-toast-region" aria-live="polite"></div>
+    <div id="acs-camera-modal" class="acs-app-modal acs-app-hidden" role="dialog" aria-modal="true" aria-labelledby="acs-camera-title"><div class="acs-app-modal-card"><div class="acs-app-modal-header"><div><div class="acs-app-eyebrow">نظارت زنده</div><h2 id="acs-camera-title" class="acs-app-modal-title">تصویر دوربین</h2></div><button id="acs-close-modal" class="acs-app-icon-button acs-app-modal-close" type="button" aria-label="بستن تصویر دوربین">×</button></div><div class="acs-app-video"><div class="acs-app-video-scene"><div class="acs-app-video-hall"></div><div class="acs-app-video-door"></div><div class="acs-app-video-floor"></div><div class="acs-app-video-person"></div></div><div class="acs-app-video-grid"></div><div class="acs-app-video-scan"></div><div class="acs-app-video-rec"><span class="acs-app-rec-dot"></span> ضبط</div><div class="acs-app-video-crosshair">＋</div><div id="acs-video-time" class="acs-app-video-time"></div><div class="acs-app-video-label">دوربین / پخش زنده</div></div><div class="acs-app-modal-footer"><span><span class="acs-app-status-light"></span> اتصال امن</span><span>تصویر شبیه‌سازی‌شده · حالت نمایشی</span></div></div></div>
+  </div>
+</body>
+</html>

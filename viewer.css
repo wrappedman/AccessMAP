@@ -1,0 +1,24 @@
+/* Display-only entry point (viewer.html): no tools sidebar, no editing controls. */
+.acs-app-container.acs-app-viewer{grid-template-columns:minmax(0,1fr) 294px}
+
+/* Mode badge in the header. */
+.acs-app-mode-pill{display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border:1px solid #bfe6ea;border-radius:20px;background:#eefbfc;color:#1a93a3;font:800 10px/1.4 "ACS Vazirmatn",Tahoma,Arial,sans-serif;white-space:nowrap}
+.acs-app-mode-dot{width:7px;height:7px;border-radius:50%;background:#27b4c5;box-shadow:0 0 0 3px #27b4c52e;animation:acs-app-mode-pulse 2.4s ease-in-out infinite}
+@keyframes acs-app-mode-pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* Read-only device panel: status and position only, no sliders or icon pickers. */
+.acs-app-readonly-row{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px dashed #e6eef1;color:#6f8894;font-size:11px}
+.acs-app-readonly-row strong{color:#314c5b;font-weight:750}
+.acs-app-readonly-note{margin:12px 0 0;padding:9px 10px;border:1px solid #dff0f2;border-radius:7px;background:#f4fbfc;color:#7d949d;font-size:10px;line-height:1.75}
+.acs-app-event-status{color:#93a5ad;font-size:9px;font-weight:700}
+
+/* The tools sidebar is absent, so notifications use the free corner. */
+.acs-app-viewer .acs-app-toast-region{left:24px;right:auto}
+
+@media(max-width:1280px){.acs-app-container.acs-app-viewer{grid-template-columns:minmax(0,1fr) 255px}}
+@media(max-width:1050px){.acs-app-container.acs-app-viewer{grid-template-columns:minmax(0,1fr) 220px;grid-template-rows:112px minmax(0,1fr)}}
+@media(max-width:760px){.acs-app-container.acs-app-viewer{grid-template-columns:1fr;grid-template-rows:auto minmax(550px,auto) auto}
+.acs-app-viewer .acs-app-workspace{grid-row:2}
+.acs-app-viewer .acs-app-sidebar-right{grid-row:3;border-top:1px solid #e1eaed}
+.acs-app-mode-pill{font-size:9px;padding:6px 9px}
+}

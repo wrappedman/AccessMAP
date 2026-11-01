@@ -25,7 +25,8 @@
         <span class="acs-app-action-divider"></span>
         <button id="acs-breach" class="acs-app-button acs-app-button-danger" type="button"><span class="acs-app-button-icon">⚡</span> شبیه‌سازی هشدار امنیتی</button>
         <button id="acs-track" class="acs-app-button acs-app-button-subtle" type="button"><span class="acs-app-button-icon">◎</span> شبیه‌سازی ردیابی</button>
-        <button id="acs-save" class="acs-app-button acs-app-button-primary" type="button">ذخیره تنظیمات <span aria-hidden="true">↗</span></button>
+        <a class="acs-app-button acs-app-button-subtle acs-app-view-link" href="viewer.html" target="_blank" rel="noopener" title="صفحه نمایش نقشه؛ فقط مشاهده و کنترل درها"><span class="acs-app-button-icon">◱</span> صفحه نمایش ↗</a>
+        <button id="acs-save" class="acs-app-button acs-app-button-primary" type="button" aria-label="ذخیره تنظیمات"><span id="acs-save-indicator" class="acs-app-save-indicator acs-app-hidden" aria-hidden="true"></span>ذخیره تنظیمات <span aria-hidden="true">↗</span></button>
       </div>
     </header>
 
@@ -42,10 +43,10 @@
           <div id="acs-palette" class="acs-app-palette"></div>
         </section>
         <section class="acs-app-section acs-app-config-tools"><div class="acs-app-section-heading"><span>مدیریت پیکربندی</span><span class="acs-app-section-index">03</span></div><div class="acs-app-config-actions"><button id="acs-export" class="acs-app-config-button" type="button">↓ خروجی JSON</button><label for="acs-import" class="acs-app-config-button">↑ ورود JSON</label><input id="acs-import" class="acs-app-visually-hidden" type="file" accept="application/json,.json"></div><p class="acs-app-helper">برای انتقال یا پشتیبان‌گیری از تنظیمات نقشه.</p></section>
-        <section class="acs-app-section acs-app-tips"><div class="acs-app-section-heading"><span>راهنمای سریع</span><span class="acs-app-section-index">03</span></div>
+        <section class="acs-app-section acs-app-tips"><div class="acs-app-section-heading"><span>راهنمای سریع</span><span class="acs-app-section-index">04</span></div>
           <div class="acs-app-tip"><span class="acs-app-tip-number">01</span><span>تجهیزات را بکشید و روی نقشه قرار دهید</span></div>
           <div class="acs-app-tip"><span class="acs-app-tip-number">02</span><span>برای ویرایش، روی هر تجهیز کلیک کنید</span></div>
-          <div class="acs-app-tip"><span class="acs-app-tip-number">03</span><span>سناریوهای نمایشی را از نوار بالا اجرا کنید</span></div>
+          <div class="acs-app-tip"><span class="acs-app-tip-number">03</span><span>تغییرات فقط با دکمه «ذخیره تنظیمات» ثبت می‌شوند</span></div>
         </section>
       </div>
       <div class="acs-app-sidebar-footer"><span class="acs-app-status-light"></span> سامانه فعال <span class="acs-app-footer-version">نسخه ۱.۰</span></div>
@@ -57,7 +58,7 @@
         <div id="acs-scroll-area" class="acs-app-scroll-area"><div id="acs-canvas" class="acs-app-canvas" aria-label="بوم نقشه طبقه"><div id="acs-elements" class="acs-app-elements"></div><svg id="acs-path-overlay" class="acs-app-path-overlay" aria-hidden="true"></svg><div id="acs-device-menu" class="acs-app-device-menu acs-app-hidden" role="group" aria-label="تغییر وضعیت تجهیز"></div><div id="acs-person-marker" class="acs-app-person-marker acs-app-hidden" aria-live="polite"></div></div></div>
         <div class="acs-app-map-footer"><span><span class="acs-app-footer-key">✦</span> برای شروع، تجهیزات را از جعبه‌ابزار روی نقشه بکشید</span><span>برای مشاهده بیشتر پیمایش کنید <span aria-hidden="true">↗</span></span></div>
       </div>
-      <div class="acs-app-workspace-bottom"><div><span class="acs-app-status-light"></span><span id="acs-status-text">همه سامانه‌ها در وضعیت عادی هستند</span></div><span>تنظیمات به‌صورت محلی ذخیره می‌شود <span class="acs-app-bottom-separator">/</span> ذخیره خودکار فعال</span></div>
+      <div class="acs-app-workspace-bottom"><div><span class="acs-app-status-light"></span><span id="acs-status-text">همه سامانه‌ها در وضعیت عادی هستند</span></div><span>تنظیمات به‌صورت محلی ذخیره می‌شود <span class="acs-app-bottom-separator">/</span> <span id="acs-save-state">ذخیره دستی فعال</span></span></div>
       <div id="acs-tracking-log" class="acs-app-tracking-log acs-app-hidden" aria-live="polite"><div class="acs-app-tracking-header"><span><span class="acs-app-tracking-pulse"></span> ردیابی پرسنل</span><button id="acs-close-tracking" class="acs-app-icon-button" type="button" aria-label="بستن گزارش ردیابی">×</button></div><div class="acs-app-tracking-person"><div id="acs-tracking-avatar" class="acs-app-avatar">عق</div><div><strong id="acs-tracking-name">علیرضا قورچیان</strong><small id="acs-tracking-id">شماره پرسنلی · ۴۸۲۹</small></div><span class="acs-app-tracking-active">فعال</span></div><div id="acs-tracking-entries" class="acs-app-tracking-entries"></div></div>
     </main>
 

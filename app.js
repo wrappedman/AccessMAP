@@ -30,6 +30,14 @@
   ];
   const sampleAlerts = () => [{ id: 1, type: 'denied', severity: 'medium', floor: 1, deviceId: 404, message: 'کارت نامعتبر در کارت‌خوان شماره ۴۰۴', time: 'امروز · ۰۷:۴۲', acknowledged: true }];
   const $ = (id) => document.getElementById(id);
+  // index.html runs in editor mode, viewer.html (data-mode="viewer") is display-only.
+  const MODE = $('acs-builder-app')?.dataset.mode === 'viewer' ? 'viewer' : 'editor';
+  const isEditor = MODE === 'editor';
+  // Optional nodes exist only in one of the two pages, so listeners are attached defensively.
+  const on = (target, type, handler, options) => {
+    const node = typeof target === 'string' ? $(target) : target;
+    if (node) node.addEventListener(type, handler, options);
+  };
   const ui = {
     canvas: $('acs-canvas'), elements: $('acs-elements'), scroll: $('acs-scroll-area'), overlay: $('acs-path-overlay'),
     floor: $('acs-floor-select'), properties: $('acs-properties'), palette: $('acs-palette'),
@@ -90,6 +98,7 @@
   let selectedPersonId = null;
   let activeTab = 'properties';
   let activeRoute = null;
+  let dirty = false;
 
   const currentFloor = () => appState.floors[appState.currentFloor];
   const selectedElement = () => currentFloor().elements.find(el => el.id === selectedId);
@@ -102,6 +111,8 @@
   const stateLabel = el => ({ locked: 'قفل', unlocked: 'باز', active: 'فعال', inactive: 'غیرفعال', normal: 'عادی' })[el.state] || 'عادی';
   function hideMenu() { ui.menu.classList.add('acs-app-hidden'); ui.menu.replaceChildren(); delete ui.menu.dataset.id; }
   function showMenu(el) {
+    // Display mode only exposes the door/gate lock actions.
+    if (!isEditor && !['door','gate'].includes(el.type)) return;
     ui.menu.dataset.id = String(el.id);
     ui.menu.innerHTML = `<div class="acs-app-device-menu-title">${catalog[el.type].name} شماره ${fa(el.id)} · ${stateLabel(el)}</div>${stateOptions(el).map(option => `<button class="acs-app-device-menu-action" type="button" data-state="${option.value}" aria-pressed="${el.state === option.value}">${option.label}</button>`).join('')}`;
     // Keep the context menu inside the map even for devices near its edges.
@@ -112,18 +123,34 @@
   }
   function changeDeviceState(el, state) {
     if (!stateOptions(el).some(option => option.value === state)) return;
+    if (!isEditor && !['door','gate'].includes(el.type)) return;
     el.state = state;
-    hideMenu(); renderElements(); renderProperties(); persist();
+    hideMenu(); renderElements(); renderProperties(); markDirty();
     const message = `${catalog[el.type].name} شماره ${fa(el.id)}: ${stateLabel(el)}`;
-    setStatus(message); toast('وضعیت تجهیز تغییر کرد', message);
+    setStatus(message); toast('وضعیت تجهیز تغییر کرد', isEditor ? message : `${message} · در حالت نمایشی ذخیره نمی‌شود`);
   }
   function persist(showConfirmation = false) {
+    // Display mode is read-only: it never overwrites the saved configuration of the editor.
+    if (!isEditor) return;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+      dirty = false;
+      updateSaveState();
       if (showConfirmation) toast('تنظیمات ذخیره شد', `اطلاعات طبقه ${fa(appState.currentFloor)} در این مرورگر ذخیره شد.`);
     } catch {
       toast('فضای ذخیره‌سازی کافی نیست', 'نقشه کوچک‌تری انتخاب کنید؛ تغییرات ذخیره نشد.', true);
     }
+  }
+  // Nothing is written to localStorage until the user presses the save button.
+  function markDirty() { if (!isEditor) return; dirty = true; updateSaveState(); }
+  function updateSaveState() {
+    const label = $('acs-save-state');
+    if (label) label.textContent = dirty ? 'تغییرات ذخیره‌نشده — ذخیره کنید' : 'ذخیره دستی فعال';
+    const button = $('acs-save');
+    if (!button) return;
+    button.classList.toggle('acs-app-button-attention', dirty);
+    button.setAttribute('aria-label', dirty ? 'ذخیره تنظیمات · تغییرات ذخیره‌نشده' : 'ذخیره تنظیمات');
+    $('acs-save-indicator')?.classList.toggle('acs-app-hidden', !dirty);
   }
   function toast(title, message, error = false) {
     const node = document.createElement('div');
@@ -170,7 +197,16 @@
   function renderProperties() {
     const el = selectedElement();
     if (!el) {
-      ui.properties.innerHTML = `<div class="acs-app-empty-state"><div class="acs-app-empty-icon">${icon('reader')}</div><p class="acs-app-empty-title">برای ویرایش، یک تجهیز انتخاب کنید</p><p class="acs-app-empty-description">روی یکی از تجهیزات نقشه کلیک کنید تا اندازه، چرخش و وضعیت آن را تغییر دهید.</p></div>`;
+      ui.properties.innerHTML = isEditor
+        ? `<div class="acs-app-empty-state"><div class="acs-app-empty-icon">${icon('reader')}</div><p class="acs-app-empty-title">برای ویرایش، یک تجهیز انتخاب کنید</p><p class="acs-app-empty-description">روی یکی از تجهیزات نقشه کلیک کنید تا اندازه، چرخش و وضعیت آن را تغییر دهید.</p></div>`
+        : `<div class="acs-app-empty-state"><div class="acs-app-empty-icon">${icon('reader')}</div><p class="acs-app-empty-title">برای مشاهده، یک تجهیز انتخاب کنید</p><p class="acs-app-empty-description">در حالت نمایشی می‌توانید وضعیت درها و گیت‌ها را ببینید و باز یا قفل کنید؛ اما افزودن، جابه‌جایی و ویرایش تجهیزات ممکن نیست.</p></div>`;
+      return;
+    }
+    if (!isEditor) {
+      const readOnlyActions = ['door','gate'].includes(el.type)
+        ? `<div class="acs-app-state-actions">${stateOptions(el).map(option => `<button class="acs-app-state-button" type="button" data-state="${option.value}" aria-pressed="${el.state === option.value}">${option.label}</button>`).join('')}</div>`
+        : '<p class="acs-app-readonly-note">وضعیت این تجهیز در حالت نمایشی قابل تغییر نیست.</p>';
+      ui.properties.innerHTML = `<div class="acs-app-properties-inner"><div class="acs-app-property-device"><div class="acs-app-property-icon">${icon(el.type, el.icon)}</div><div><strong>${catalog[el.type].name} شماره ${fa(el.id)}</strong><small>شناسه تجهیز · ACS-${el.id}</small></div></div><div class="acs-app-property-heading">وضعیت تجهیز · ${stateLabel(el)}</div>${readOnlyActions}<div class="acs-app-property-divider"></div><div class="acs-app-property-heading">موقعیت روی نقشه</div><div class="acs-app-readonly-row"><span>موقعیت افقی</span><strong>${fa(Math.round(el.x))}٪</strong></div><div class="acs-app-readonly-row"><span>موقعیت عمودی</span><strong>${fa(Math.round(el.y))}٪</strong></div><div class="acs-app-readonly-row"><span>طبقه</span><strong>${floorNames[appState.currentFloor][0]}</strong></div><p class="acs-app-readonly-note">این صفحه فقط برای نمایش است؛ برای جابه‌جایی یا ویرایش تجهیزات، ویرایشگر نقشه را باز کنید.</p></div>`;
       return;
     }
     const field = (key, title, min, max, unit) => `<div class="acs-app-property-row"><label class="acs-app-property-label" for="acs-range-${key}"><span>${title}</span><span class="acs-app-property-value" id="acs-value-${key}">${fa(el[key])} ${unit}</span></label><input id="acs-range-${key}" class="acs-app-slider" type="range" data-property="${key}" min="${min}" max="${max}" value="${el[key]}" style="--acs-progress:${((el[key]-min)/(max-min))*100}%"></div>`;
@@ -235,12 +271,19 @@
       const message = document.createElement('strong'); message.textContent = alert.message;
       const foot = document.createElement('div'); foot.className = 'acs-app-event-foot';
       const floor = document.createElement('span'); floor.textContent = `طبقه ${fa(alert.floor)} · تجهیز ${fa(alert.deviceId)}`;
-      const ack = document.createElement('button'); ack.type = 'button'; ack.className = 'acs-app-event-ack'; ack.dataset.ackId = String(alert.id); ack.textContent = alert.acknowledged ? 'تأیید شده ✓' : 'تأیید هشدار'; ack.disabled = !!alert.acknowledged;
       const locate = document.createElement('button'); locate.type = 'button'; locate.className = 'acs-app-event-locate'; locate.dataset.locateAlert = String(alert.id); locate.textContent = 'نمایش تجهیز';
-      foot.append(floor, locate, ack); card.append(head, message, foot); list.append(card);
+      foot.append(floor, locate);
+      if (isEditor) {
+        const ack = document.createElement('button'); ack.type = 'button'; ack.className = 'acs-app-event-ack'; ack.dataset.ackId = String(alert.id); ack.textContent = alert.acknowledged ? 'تأیید شده ✓' : 'تأیید هشدار'; ack.disabled = !!alert.acknowledged;
+        foot.append(ack);
+      } else {
+        const status = document.createElement('span'); status.className = 'acs-app-event-status'; status.textContent = alert.acknowledged ? 'تأیید شده ✓' : 'بررسی نشده';
+        foot.append(status);
+      }
+      card.append(head, message, foot); list.append(card);
     }
   }
-  function render() { updateCanvas(); renderElements(); renderProperties(); renderPersonMarker(); renderPersonnel(); renderEvents(); }
+  function render() { updateCanvas(); renderElements(); renderProperties(); renderPersonMarker(); renderPersonnel(); renderEvents(); updateSaveState(); }
   function select(id) { if (id !== selectedId) hideMenu(); selectedId = id; renderElements(); renderProperties(); if (id !== null) setTab('properties'); }
 
   // Clamp a rotated badge plus the label to the visible canvas, including after resizing.
@@ -271,10 +314,10 @@
         const el = device(nextId++, action.type, 50, 50, action.type === 'gate' ? 52 : 46, action.type === 'gate' ? 62 : 58);
         positionWithinCanvas(el, event.clientX, event.clientY);
         currentFloor().elements.push(el);
-        select(el.id); persist(); setStatus(`${catalog[el.type].name} شماره ${fa(el.id)} به طبقه ${fa(appState.currentFloor)} افزوده شد`);
+        select(el.id); markDirty(); setStatus(`${catalog[el.type].name} شماره ${fa(el.id)} به طبقه ${fa(appState.currentFloor)} افزوده شد · ذخیره نشده`);
       }
     } else if (action.moved) {
-      hideMenu(); persist(); setStatus('موقعیت تجهیز به‌روز شد');
+      hideMenu(); markDirty(); setStatus('موقعیت تجهیز تغییر کرد · برای ذخیره، دکمه ذخیره را بزنید');
     } else if (action.el.type === 'camera') {
       hideMenu(); openCamera(action.el);
     } else {
@@ -298,38 +341,50 @@
     }
   }
   function startDrag(action) { dragging = action; document.addEventListener('mousemove', moveDrag); document.addEventListener('mouseup', endDrag); }
-  ui.palette.innerHTML = Object.entries(catalog).map(([type, info]) => `<button class="acs-app-palette-item" type="button" data-type="${type}" aria-label="کشیدن ${info.name} روی نقشه"><span class="acs-app-palette-icon">${icon(type)}</span><span>${info.name}</span></button>`).join('');
-  ui.palette.addEventListener('mousedown', event => {
-    const item = event.target.closest('.acs-app-palette-item');
-    if (!item || event.button !== 0) return;
-    event.preventDefault();
-    const type = item.dataset.type;
-    const ghost = document.createElement('div'); ghost.className = 'acs-app-drag-ghost acs-app-drag-invalid'; ghost.innerHTML = icon(type);
-    ghost.style.left = `${event.clientX}px`; ghost.style.top = `${event.clientY}px`;
-    document.querySelector('#acs-builder-app').append(ghost);
-    startDrag({ kind: 'palette', type, ghost });
-  });
-  ui.palette.addEventListener('keydown', event => {
-    const item = event.target.closest('.acs-app-palette-item');
-    if (!item || !['Enter',' '].includes(event.key)) return;
-    event.preventDefault();
-    const rect = ui.canvas.getBoundingClientRect();
-    const el = device(nextId++, item.dataset.type, 50, 50);
-    positionWithinCanvas(el, rect.left + rect.width / 2, rect.top + rect.height / 2);
-    currentFloor().elements.push(el); select(el.id); persist();
-    toast('تجهیز افزوده شد', `${catalog[el.type].name} شماره ${fa(el.id)} در مرکز نقشه قرار گرفت.`);
-  });
+  // The add-device palette only exists in index.html; the display page has no palette at all.
+  if (isEditor && ui.palette) {
+    ui.palette.innerHTML = Object.entries(catalog).map(([type, info]) => `<button class="acs-app-palette-item" type="button" data-type="${type}" aria-label="کشیدن ${info.name} روی نقشه"><span class="acs-app-palette-icon">${icon(type)}</span><span>${info.name}</span></button>`).join('');
+    on(ui.palette, 'mousedown', event => {
+      const item = event.target.closest('.acs-app-palette-item');
+      if (!item || event.button !== 0) return;
+      event.preventDefault();
+      const type = item.dataset.type;
+      const ghost = document.createElement('div'); ghost.className = 'acs-app-drag-ghost acs-app-drag-invalid'; ghost.innerHTML = icon(type);
+      ghost.style.left = `${event.clientX}px`; ghost.style.top = `${event.clientY}px`;
+      document.querySelector('#acs-builder-app').append(ghost);
+      startDrag({ kind: 'palette', type, ghost });
+    });
+    on(ui.palette, 'keydown', event => {
+      const item = event.target.closest('.acs-app-palette-item');
+      if (!item || !['Enter',' '].includes(event.key)) return;
+      event.preventDefault();
+      const rect = ui.canvas.getBoundingClientRect();
+      const el = device(nextId++, item.dataset.type, 50, 50);
+      positionWithinCanvas(el, rect.left + rect.width / 2, rect.top + rect.height / 2);
+      currentFloor().elements.push(el); select(el.id); markDirty();
+      toast('تجهیز افزوده شد', `${catalog[el.type].name} شماره ${fa(el.id)} در مرکز نقشه قرار گرفت · برای ذخیره، دکمه ذخیره را بزنید.`);
+    });
+  }
   ui.elements.addEventListener('mousedown', event => {
     const node = event.target.closest('.acs-app-device');
     if (!node || event.button !== 0) return;
-    event.preventDefault();
+    if (isEditor) event.preventDefault(); // No text/image dragging while moving a device.
     const el = currentFloor().elements.find(item => item.id === Number(node.dataset.id));
     if (!el) return;
     select(el.id);
+    if (!isEditor) return; // Display mode never starts a drag, it only selects.
     const rect = ui.canvas.getBoundingClientRect();
     startDrag({ kind: 'existing', el, startX: event.clientX, startY: event.clientY, offsetX: event.clientX - (rect.left + rect.width * el.x / 100), offsetY: event.clientY - (rect.top + rect.height * el.y / 100), moved: false });
   });
-  ui.elements.addEventListener('click', event => { if (event.detail === 0) { const node = event.target.closest('.acs-app-device'); if (node) { const el = currentFloor().elements.find(item => item.id === Number(node.dataset.id)); if (el) { select(el.id); if (el.type === 'camera') openCamera(el); else showMenu(el); } } } });
+  ui.elements.addEventListener('click', event => {
+    const node = event.target.closest('.acs-app-device');
+    if (!node) return;
+    if (isEditor && event.detail !== 0) return; // Mouse drags are handled on mouseup in the editor.
+    const el = currentFloor().elements.find(item => item.id === Number(node.dataset.id));
+    if (!el) return;
+    select(el.id);
+    if (el.type === 'camera') openCamera(el); else showMenu(el);
+  });
   ui.elements.addEventListener('contextmenu', event => {
     const node = event.target.closest('.acs-app-device'); if (!node) return;
     event.preventDefault();
@@ -343,27 +398,28 @@
     if (button && el) changeDeviceState(el, button.dataset.state);
   });
   ui.canvas.addEventListener('mousedown', event => { if (event.target === ui.canvas || event.target === ui.elements || event.target === ui.overlay) { hideMenu(); select(null); } });
-  ui.properties.addEventListener('input', event => {
+  on(ui.properties, 'input', event => {
     const input = event.target.closest('.acs-app-slider');
     const el = selectedElement();
-    if (!input || !el) return;
+    if (!isEditor || !input || !el) return;
     el[input.dataset.property] = Number(input.value);
     $('acs-value-' + input.dataset.property).textContent = `${fa(input.value)} ${input.dataset.property === 'rotation' ? 'درجه' : 'پیکسل'}`;
     input.style.setProperty('--acs-progress', `${((Number(input.value)-Number(input.min))/(Number(input.max)-Number(input.min)))*100}%`);
-    renderElements(); persist();
+    renderElements(); markDirty();
   });
-  ui.properties.addEventListener('click', event => {
+  on(ui.properties, 'click', event => {
     const action = event.target.closest('.acs-app-state-button');
     if (action) { const el = selectedElement(); if (el) changeDeviceState(el, action.dataset.state); return; }
+    if (!isEditor) return;
     const iconChoice = event.target.closest('.acs-app-icon-choice');
-    if (iconChoice) { const el = selectedElement(); if (el && iconVariants[el.type].some(item => item.id === iconChoice.dataset.icon)) { el.icon = iconChoice.dataset.icon; renderElements(); renderProperties(); persist(); } return; }
+    if (iconChoice) { const el = selectedElement(); if (el && iconVariants[el.type].some(item => item.id === iconChoice.dataset.icon)) { el.icon = iconChoice.dataset.icon; renderElements(); renderProperties(); markDirty(); } return; }
     if (!event.target.closest('#acs-delete')) return;
     const el = selectedElement(); if (!el) return;
     currentFloor().elements = currentFloor().elements.filter(item => item.id !== el.id);
     if (breachedId === el.id) breachedId = null;
-    stopTracking(); hideMenu(); selectedId = null; render(); persist(); setStatus(`${catalog[el.type].name} شماره ${fa(el.id)} حذف شد`);
+    stopTracking(); hideMenu(); selectedId = null; render(); markDirty(); setStatus(`${catalog[el.type].name} شماره ${fa(el.id)} حذف شد · ذخیره نشده`);
   });
-  $('acs-upload').addEventListener('change', event => {
+  on('acs-upload', 'change', event => {
     const file = event.target.files?.[0]; if (!file) return;
     if (!['image/png','image/jpeg','image/webp','image/gif','image/svg+xml'].includes(file.type)) { toast('فرمت تصویر پشتیبانی نمی‌شود', 'فایل PNG، JPG، WEBP، GIF یا SVG انتخاب کنید.', true); event.target.value = ''; return; }
     const floorId = appState.currentFloor;
@@ -378,7 +434,7 @@
         floor.imageWidth = image.naturalWidth;
         floor.imageHeight = image.naturalHeight;
         if (floorId === appState.currentFloor) { stopTracking(); render(); }
-        persist(); toast('نقشه بارگذاری شد', `${file.name} برای طبقه ${fa(floorId)} ثبت شد.`);
+        markDirty(); toast('نقشه بارگذاری شد', `${file.name} برای طبقه ${fa(floorId)} ثبت شد · برای ذخیره دکمه ذخیره را بزنید.`);
       };
       image.src = reader.result;
     };
@@ -418,7 +474,7 @@
   ui.floor.addEventListener('change', () => {
     stopTracking(); clearBreach(); hideMenu(); selectedId = null;
     appState.currentFloor = Number(ui.floor.value);
-    ui.scroll.scrollTo(0, 0); render(); persist(); setStatus(`نمایش طبقه ${fa(appState.currentFloor)}`);
+    ui.scroll.scrollTo(0, 0); render(); setStatus(`نمایش طبقه ${fa(appState.currentFloor)}`);
   });
   document.querySelectorAll('.acs-app-panel-tab').forEach(button => button.addEventListener('click', () => setTab(button.id.replace('acs-tab-', ''))));
   $('acs-person-search').addEventListener('input', renderPersonnel);
@@ -435,7 +491,7 @@
   });
   $('acs-events-panel').addEventListener('click', event => {
     const action = event.target.closest('.acs-app-alert-action');
-    if (action) { triggerAlert(action.dataset.alertType); return; }
+    if (action) { if (isEditor) triggerAlert(action.dataset.alertType); return; }
     const locate = event.target.closest('.acs-app-event-locate');
     if (locate) {
       const alert = appState.alerts.find(item => item.id === Number(locate.dataset.locateAlert));
@@ -448,17 +504,17 @@
       return;
     }
     const ack = event.target.closest('.acs-app-event-ack');
-    if (ack) { const alert = appState.alerts.find(item => item.id === Number(ack.dataset.ackId)); if (alert) { alert.acknowledged = true; renderEvents(); persist(); } }
+    if (ack) { const alert = appState.alerts.find(item => item.id === Number(ack.dataset.ackId)); if (alert) { alert.acknowledged = true; renderEvents(); } }
   });
-  $('acs-ack-all').addEventListener('click', () => { appState.alerts.forEach(alert => { alert.acknowledged = true; }); renderEvents(); persist(); toast('هشدارها تأیید شدند', 'همه رویدادهای فعال بررسی شدند.'); });
-  $('acs-export').addEventListener('click', () => {
+  on('acs-ack-all', 'click', () => { appState.alerts.forEach(alert => { alert.acknowledged = true; }); renderEvents(); toast('هشدارها تأیید شدند', 'همه رویدادهای فعال بررسی شدند.'); });
+  on('acs-export', 'click', () => {
     const blob = new Blob([JSON.stringify(appState, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a'); link.href = url; link.download = 'acs-configuration.json'; link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     toast('پشتیبان تهیه شد', 'فایل پیکربندی دانلود شد.');
   });
-  $('acs-import').addEventListener('change', event => {
+  on('acs-import', 'change', event => {
     const file = event.target.files?.[0]; event.target.value = '';
     if (!file) return;
     if (file.size > 12 * 1024 * 1024) { toast('فایل بیش از حد بزرگ است', 'فایل پیکربندی باید کوچک‌تر از ۱۲ مگابایت باشد.', true); return; }
@@ -482,23 +538,23 @@
         appState.floors = data.floors; appState.currentFloor = Number(data.currentFloor);
         appState.alerts = Array.isArray(data.alerts) ? data.alerts.filter(alert => Number.isFinite(alert.id) && typeof alert.message === 'string').slice(0, 50) : [];
         nextId = Math.max(400, ...Object.values(appState.floors).flatMap(floor => floor.elements.map(el => el.id))) + 1;
-        render(); persist(); toast('پیکربندی وارد شد', 'نقشه‌ها و تجهیزات بازیابی شدند.');
+        render(); markDirty(); toast('پیکربندی وارد شد', 'نقشه‌ها و تجهیزات بازیابی شدند · برای ذخیره دکمه ذخیره را بزنید.');
       } catch { toast('فایل نامعتبر است', 'ساختار فایل پیکربندی قابل‌قبول نیست.', true); }
     };
     reader.onerror = () => toast('خطا در خواندن فایل', 'لطفاً دوباره تلاش کنید.', true);
     reader.readAsText(file);
   });
-  $('acs-save').addEventListener('click', () => persist(true));
+  on('acs-save', 'click', () => persist(true));
   function setDoors(state) {
     const doors = currentFloor().elements.filter(el => el.type === 'door');
     doors.forEach(el => { el.state = state; });
-    renderElements(); renderProperties(); persist();
+    renderElements(); renderProperties(); markDirty();
     hideMenu();
     setStatus(`همه درهای طبقه ${fa(appState.currentFloor)} ${state === 'locked' ? 'قفل' : 'باز'} شدند`);
-    toast('وضعیت درها تغییر کرد', `${fa(doors.length)} در در طبقه ${fa(appState.currentFloor)} ${state === 'locked' ? 'قفل' : 'باز'} شد.`);
+    toast('وضعیت درها تغییر کرد', `${fa(doors.length)} در در طبقه ${fa(appState.currentFloor)} ${state === 'locked' ? 'قفل' : 'باز'} شد${isEditor ? '.' : ' · در حالت نمایشی ذخیره نمی‌شود.'}`);
   }
-  $('acs-lock-all').addEventListener('click', () => setDoors('locked'));
-  $('acs-unlock-all').addEventListener('click', () => setDoors('unlocked'));
+  on('acs-lock-all', 'click', () => setDoors('locked'));
+  on('acs-unlock-all', 'click', () => setDoors('unlocked'));
   function clearBreach() { clearTimeout(breachTimer); breachTimer = null; breachedId = null; renderElements(); }
   const alertScenarios = {
     unauthorized: { type: 'gate', fallback: 'reader', title: 'دسترسی غیرمجاز', severity: 'high' },
@@ -518,11 +574,11 @@
     const nextAlertId = Math.max(0, ...appState.alerts.map(alert => alert.id)) + 1;
     appState.alerts.unshift({ id: nextAlertId, type, severity: scenario.severity, floor: appState.currentFloor, deviceId: el.id, message, time: new Date().toLocaleString('fa-IR', { dateStyle: 'short', timeStyle: 'short' }), acknowledged: false });
     appState.alerts = appState.alerts.slice(0, 50);
-    renderElements(); renderProperties(); renderEvents(); persist();
+    renderElements(); renderProperties(); renderEvents();
     toast('هشدار امنیتی', message, true); setStatus(`هشدار: ${message}`);
     breachTimer = setTimeout(() => { breachedId = null; renderElements(); setStatus('همه سامانه‌ها در وضعیت عادی هستند'); }, 6500);
   }
-  $('acs-breach').addEventListener('click', () => triggerAlert('unauthorized'));
+  on('acs-breach', 'click', () => triggerAlert('unauthorized'));
   function openCamera(el) {
     previousFocus = document.activeElement;
     ui.modalTitle.textContent = `دوربین شماره ${fa(el.id)} · ${el.state === 'inactive' ? 'قطع ارتباط' : 'پخش زنده'}`;
@@ -673,5 +729,11 @@
     if (!event.target.closest('.acs-app-select-wrap')) closeFloorMenu();
   });
   window.addEventListener('resize', () => { hideMenu(); updateRouteGeometry(); });
+  // Manual save: warn before leaving with unsaved changes so no position is lost silently.
+  window.addEventListener('beforeunload', event => {
+    if (!isEditor || !dirty) return;
+    event.preventDefault();
+    event.returnValue = '';
+  });
   render();
 })();
