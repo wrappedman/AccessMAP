@@ -4,19 +4,19 @@
   const STORAGE_KEY = 'sentinel-access-map-v1';
   const DEFAULT_PLAN = 'assets/floor-plan.svg';
   const SVG_NS = 'http://www.w3.org/2000/svg';
-  const floorNames = { 1: ['GROUND FLOOR', 'GROUND FLOOR / LEVEL 01'], 2: ['OPERATIONS FLOOR', 'OPERATIONS / LEVEL 02'], 3: ['EXECUTIVE FLOOR', 'EXECUTIVE / LEVEL 03'] };
+  const floorNames = { 1: ['طبقه همکف', 'طبقه همکف / سطح ۰۱'], 2: ['طبقه عملیاتی', 'طبقه عملیاتی / سطح ۰۲'], 3: ['طبقه مدیریت', 'طبقه مدیریت / سطح ۰۳'] };
   const catalog = {
-    camera: { name: 'Camera', short: 'CAM', icon: '<rect x="5" y="9" width="17" height="13" rx="3"/><path d="m22 13 7-4v13l-7-4M11 9V5h7v4M9 26h9"/><circle cx="13.5" cy="15.5" r="2.5"/>' },
-    reader: { name: 'Card Reader', short: 'READER', icon: '<rect x="9" y="3" width="14" height="26" rx="3"/><path d="M13 9h6M13 14h6M14 23h4"/><path d="M3 13c2-2 2-4 0-6M29 13c-2-2-2-4 0-6"/>' },
-    gate: { name: 'Turnstile Gate', short: 'GATE', icon: '<path d="M4 5v23M28 5v23M4 10h24M16 10v15M8 18h16M16 25l-5 4M16 25l5 4"/>' },
-    door: { name: 'Door', short: 'DOOR', icon: '<path d="M7 29V3h18v26M11 29V7h10v22M3 29h26"/><circle cx="18" cy="18" r="1"/>' }
+    camera: { name: 'دوربین', short: 'دوربین', icon: '<rect x="5" y="9" width="17" height="13" rx="3"/><path d="m22 13 7-4v13l-7-4M11 9V5h7v4M9 26h9"/><circle cx="13.5" cy="15.5" r="2.5"/>' },
+    reader: { name: 'کارت‌خوان', short: 'کارت‌خوان', icon: '<rect x="9" y="3" width="14" height="26" rx="3"/><path d="M13 9h6M13 14h6M14 23h4"/><path d="M3 13c2-2 2-4 0-6M29 13c-2-2-2-4 0-6"/>' },
+    gate: { name: 'گیت تردد', short: 'گیت', icon: '<path d="M4 5v23M28 5v23M4 10h24M16 10v15M8 18h16M16 25l-5 4M16 25l5 4"/>' },
+    door: { name: 'در', short: 'در', icon: '<path d="M7 29V3h18v26M11 29V7h10v22M3 29h26"/><circle cx="18" cy="18" r="1"/>' }
   };
   const icon = (type) => `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${catalog[type].icon}</svg>`;
   const $ = (id) => document.getElementById(id);
   const ui = {
     canvas: $('acs-canvas'), elements: $('acs-elements'), scroll: $('acs-scroll-area'), overlay: $('acs-path-overlay'),
     floor: $('acs-floor-select'), properties: $('acs-properties'), palette: $('acs-palette'),
-    modal: $('acs-camera-modal'), modalTitle: $('acs-camera-title'), videoTime: $('acs-video-time'),
+    modal: $('acs-camera-modal'), modalTitle: $('acs-camera-title'), videoTime: $('acs-video-time'), menu: $('acs-device-menu'),
     tracking: $('acs-tracking-log'), entries: $('acs-tracking-entries'), status: $('acs-status-text')
   };
 
@@ -72,12 +72,34 @@
   const currentFloor = () => appState.floors[appState.currentFloor];
   const selectedElement = () => currentFloor().elements.find(el => el.id === selectedId);
   const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
+  const fa = value => Number(value).toLocaleString('fa-IR', { useGrouping: false });
+  const stateOptions = el => ['door','gate'].includes(el.type)
+    ? [{ value: 'locked', label: '🔒 قفل کردن' }, { value: 'unlocked', label: '🔓 باز کردن' }]
+    : [{ value: 'active', label: '● فعال کردن' }, { value: 'inactive', label: '○ غیرفعال کردن' }];
+  const stateLabel = el => ({ locked: 'قفل', unlocked: 'باز', active: 'فعال', inactive: 'غیرفعال', normal: 'عادی' })[el.state] || 'عادی';
+  function hideMenu() { ui.menu.classList.add('acs-app-hidden'); ui.menu.replaceChildren(); delete ui.menu.dataset.id; }
+  function showMenu(el) {
+    ui.menu.dataset.id = String(el.id);
+    ui.menu.innerHTML = `<div class="acs-app-device-menu-title">${catalog[el.type].name} شماره ${fa(el.id)} · ${stateLabel(el)}</div>${stateOptions(el).map(option => `<button class="acs-app-device-menu-action" type="button" data-state="${option.value}" aria-pressed="${el.state === option.value}">${option.label}</button>`).join('')}`;
+    // Keep the context menu inside the map even for devices near its edges.
+    const width = ui.canvas.clientWidth, height = ui.canvas.clientHeight;
+    ui.menu.style.left = `${clamp(width * el.x / 100 + el.width / 2 + 8, 8, Math.max(8, width - 185))}px`;
+    ui.menu.style.top = `${clamp(height * el.y / 100 - 18, 8, Math.max(8, height - 108))}px`;
+    ui.menu.classList.remove('acs-app-hidden');
+  }
+  function changeDeviceState(el, state) {
+    if (!stateOptions(el).some(option => option.value === state)) return;
+    el.state = state;
+    hideMenu(); renderElements(); renderProperties(); persist();
+    const message = `${catalog[el.type].name} شماره ${fa(el.id)}: ${stateLabel(el)}`;
+    setStatus(message); toast('وضعیت تجهیز تغییر کرد', message);
+  }
   function persist(showConfirmation = false) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
-      if (showConfirmation) toast('Configuration saved', `Floor ${appState.currentFloor} is saved in this browser.`);
+      if (showConfirmation) toast('تنظیمات ذخیره شد', `اطلاعات طبقه ${fa(appState.currentFloor)} در این مرورگر ذخیره شد.`);
     } catch {
-      toast('Storage is full', 'Try a smaller floor plan image; changes are not saved.', true);
+      toast('فضای ذخیره‌سازی کافی نیست', 'نقشه کوچک‌تری انتخاب کنید؛ تغییرات ذخیره نشد.', true);
     }
   }
   function toast(title, message, error = false) {
@@ -97,9 +119,10 @@
     ui.floor.value = String(appState.currentFloor);
     $('acs-floor-crumb').textContent = floorNames[appState.currentFloor][0];
     $('acs-map-name').textContent = floorNames[appState.currentFloor][1];
-    $('acs-device-count').textContent = `${floor.elements.length} DEVICE${floor.elements.length === 1 ? '' : 'S'}`;
-    $('acs-map-dimensions').textContent = `${floor.imageWidth} × ${floor.imageHeight} PX`;
+    $('acs-device-count').textContent = `${fa(floor.elements.length)} تجهیز`;
+    $('acs-map-dimensions').textContent = `${fa(floor.imageWidth)} × ${fa(floor.imageHeight)} پیکسل`;
     ui.canvas.style.aspectRatio = `${floor.imageWidth} / ${floor.imageHeight}`;
+    ui.canvas.style.setProperty('--acs-plan-ratio', String(floor.imageWidth / floor.imageHeight));
     ui.canvas.style.backgroundImage = `url("${floor.background || DEFAULT_PLAN}")`;
   }
   function renderElements() {
@@ -107,28 +130,29 @@
     for (const el of currentFloor().elements) {
       const node = document.createElement('button');
       node.type = 'button';
-      node.className = `acs-app-device acs-app-device-${el.type}${el.type === 'door' ? ` acs-app-device-${el.state}` : ''}${el.id === selectedId ? ' acs-app-device-selected' : ''}${el.id === breachedId ? ' acs-app-device-breached' : ''}`;
+      node.className = `acs-app-device acs-app-device-${el.type}${el.state !== 'normal' ? ` acs-app-device-${el.state}` : ''}${el.id === selectedId ? ' acs-app-device-selected' : ''}${el.id === breachedId ? ' acs-app-device-breached' : ''}`;
       node.dataset.id = String(el.id);
-      node.setAttribute('aria-label', `${catalog[el.type].name} number ${el.id}${el.type === 'door' ? `, ${el.state}` : ''}`);
+      node.setAttribute('aria-label', `${catalog[el.type].name} شماره ${fa(el.id)}، وضعیت ${stateLabel(el)}`);
       node.style.left = `${el.x}%`; node.style.top = `${el.y}%`;
       node.style.width = `${el.width}px`; node.style.height = `${el.height}px`;
       node.style.setProperty('--acs-rotation', `${el.rotation}deg`);
-      node.innerHTML = `<span class="acs-app-device-badge">${icon(el.type)}</span><span class="acs-app-device-label">${catalog[el.type].short} ${el.id}</span>`;
+      node.innerHTML = `<span class="acs-app-device-badge">${icon(el.type)}</span><span class="acs-app-device-label">${catalog[el.type].short} ${fa(el.id)}</span>`;
       ui.elements.append(node);
     }
-    $('acs-device-count').textContent = `${currentFloor().elements.length} DEVICE${currentFloor().elements.length === 1 ? '' : 'S'}`;
+    $('acs-device-count').textContent = `${fa(currentFloor().elements.length)} تجهیز`;
   }
   function renderProperties() {
     const el = selectedElement();
     if (!el) {
-      ui.properties.innerHTML = `<div class="acs-app-empty-state"><div class="acs-app-empty-icon">${icon('reader')}</div><p class="acs-app-empty-title">Select an element to edit</p><p class="acs-app-empty-description">Choose a device on the floor plan to adjust its size, rotation, or remove it.</p></div>`;
+      ui.properties.innerHTML = `<div class="acs-app-empty-state"><div class="acs-app-empty-icon">${icon('reader')}</div><p class="acs-app-empty-title">برای ویرایش، یک تجهیز انتخاب کنید</p><p class="acs-app-empty-description">روی یکی از تجهیزات نقشه کلیک کنید تا اندازه، چرخش و وضعیت آن را تغییر دهید.</p></div>`;
       return;
     }
-    const field = (key, title, min, max, unit) => `<div class="acs-app-property-row"><label class="acs-app-property-label" for="acs-range-${key}"><span>${title}</span><span class="acs-app-property-value" id="acs-value-${key}">${el[key]}${unit}</span></label><input id="acs-range-${key}" class="acs-app-slider" type="range" data-property="${key}" min="${min}" max="${max}" value="${el[key]}" style="--acs-progress:${((el[key]-min)/(max-min))*100}%"></div>`;
-    ui.properties.innerHTML = `<div class="acs-app-properties-inner"><div class="acs-app-property-device"><div class="acs-app-property-icon">${icon(el.type)}</div><div><strong>${catalog[el.type].name} #${el.id}</strong><small>DEVICE ID · ACS-${el.id}</small></div></div><div class="acs-app-property-heading">TRANSFORM</div>${field('width','Width',32,120,' px')}${field('height','Height',42,130,' px')}${field('rotation','Rotation',0,360,'°')}<p class="acs-app-property-hint">Drag the device directly on the map to reposition it.</p><div class="acs-app-property-divider"></div>${el.type === 'door' ? `<div class="acs-app-door-state ${el.state === 'locked' ? 'acs-app-door-state-locked' : ''}">● &nbsp; Door ${el.state === 'unlocked' ? 'unlocked' : el.state === 'locked' ? 'locked' : 'in normal mode'}</div>` : ''}<button id="acs-delete" class="acs-app-delete-button" type="button"><span aria-hidden="true">✕</span> Delete Element</button></div>`;
+    const field = (key, title, min, max, unit) => `<div class="acs-app-property-row"><label class="acs-app-property-label" for="acs-range-${key}"><span>${title}</span><span class="acs-app-property-value" id="acs-value-${key}">${fa(el[key])} ${unit}</span></label><input id="acs-range-${key}" class="acs-app-slider" type="range" data-property="${key}" min="${min}" max="${max}" value="${el[key]}" style="--acs-progress:${((el[key]-min)/(max-min))*100}%"></div>`;
+    const actions = stateOptions(el).map(option => `<button class="acs-app-state-button" type="button" data-state="${option.value}" aria-pressed="${el.state === option.value}">${option.label}</button>`).join('');
+    ui.properties.innerHTML = `<div class="acs-app-properties-inner"><div class="acs-app-property-device"><div class="acs-app-property-icon">${icon(el.type)}</div><div><strong>${catalog[el.type].name} شماره ${fa(el.id)}</strong><small>شناسه تجهیز · ACS-${el.id}</small></div></div><div class="acs-app-property-heading">اندازه و چرخش</div>${field('width','عرض',32,120,'پیکسل')}${field('height','ارتفاع',42,130,'پیکسل')}${field('rotation','چرخش',0,360,'درجه')}<p class="acs-app-property-hint">برای جابه‌جایی، تجهیز را روی نقشه بکشید.</p><div class="acs-app-property-divider"></div><div class="acs-app-property-heading">وضعیت تجهیز · ${stateLabel(el)}</div><div class="acs-app-state-actions">${actions}</div><button id="acs-delete" class="acs-app-delete-button" type="button"><span aria-hidden="true">✕</span> حذف تجهیز</button></div>`;
   }
   function render() { updateCanvas(); renderElements(); renderProperties(); }
-  function select(id) { selectedId = id; renderElements(); renderProperties(); }
+  function select(id) { if (id !== selectedId) hideMenu(); selectedId = id; renderElements(); renderProperties(); }
 
   // Clamp a rotated badge plus the label to the visible canvas, including after resizing.
   function positionWithinCanvas(el, clientX, clientY) {
@@ -158,12 +182,14 @@
         const el = device(nextId++, action.type, 50, 50, action.type === 'gate' ? 52 : 46, action.type === 'gate' ? 62 : 58);
         positionWithinCanvas(el, event.clientX, event.clientY);
         currentFloor().elements.push(el);
-        select(el.id); persist(); setStatus(`${catalog[el.type].name} #${el.id} added to Floor ${appState.currentFloor}`);
+        select(el.id); persist(); setStatus(`${catalog[el.type].name} شماره ${fa(el.id)} به طبقه ${fa(appState.currentFloor)} افزوده شد`);
       }
     } else if (action.moved) {
-      persist(); setStatus('Device position updated');
+      hideMenu(); persist(); setStatus('موقعیت تجهیز به‌روز شد');
     } else if (action.el.type === 'camera') {
-      openCamera(action.el);
+      hideMenu(); openCamera(action.el);
+    } else {
+      showMenu(action.el);
     }
   }
   function moveDrag(event) {
@@ -175,7 +201,7 @@
       dragging.ghost.classList.toggle('acs-app-drag-invalid', !isOnCanvas(event.clientX, event.clientY));
     } else {
       if (!dragging.moved && Math.hypot(event.clientX - dragging.startX, event.clientY - dragging.startY) < 4) return;
-      dragging.moved = true;
+      dragging.moved = true; hideMenu();
       positionWithinCanvas(dragging.el, event.clientX - dragging.offsetX, event.clientY - dragging.offsetY);
       const node = ui.elements.querySelector(`[data-id="${dragging.el.id}"]`);
       if (node) { node.style.left = `${dragging.el.x}%`; node.style.top = `${dragging.el.y}%`; }
@@ -183,7 +209,7 @@
     }
   }
   function startDrag(action) { dragging = action; document.addEventListener('mousemove', moveDrag); document.addEventListener('mouseup', endDrag); }
-  ui.palette.innerHTML = Object.entries(catalog).map(([type, info]) => `<button class="acs-app-palette-item" type="button" data-type="${type}" aria-label="Drag ${info.name} to floor plan"><span class="acs-app-palette-icon">${icon(type)}</span><span>${info.name}</span></button>`).join('');
+  ui.palette.innerHTML = Object.entries(catalog).map(([type, info]) => `<button class="acs-app-palette-item" type="button" data-type="${type}" aria-label="کشیدن ${info.name} روی نقشه"><span class="acs-app-palette-icon">${icon(type)}</span><span>${info.name}</span></button>`).join('');
   ui.palette.addEventListener('mousedown', event => {
     const item = event.target.closest('.acs-app-palette-item');
     if (!item || event.button !== 0) return;
@@ -202,7 +228,7 @@
     const el = device(nextId++, item.dataset.type, 50, 50);
     positionWithinCanvas(el, rect.left + rect.width / 2, rect.top + rect.height / 2);
     currentFloor().elements.push(el); select(el.id); persist();
-    toast('Device placed', `${catalog[el.type].name} #${el.id} placed at the center of the map.`);
+    toast('تجهیز افزوده شد', `${catalog[el.type].name} شماره ${fa(el.id)} در مرکز نقشه قرار گرفت.`);
   });
   ui.elements.addEventListener('mousedown', event => {
     const node = event.target.closest('.acs-app-device');
@@ -214,40 +240,54 @@
     const rect = ui.canvas.getBoundingClientRect();
     startDrag({ kind: 'existing', el, startX: event.clientX, startY: event.clientY, offsetX: event.clientX - (rect.left + rect.width * el.x / 100), offsetY: event.clientY - (rect.top + rect.height * el.y / 100), moved: false });
   });
-  ui.elements.addEventListener('click', event => { if (event.detail === 0) { const node = event.target.closest('.acs-app-device'); if (node) { const el = currentFloor().elements.find(item => item.id === Number(node.dataset.id)); if (el) { select(el.id); if (el.type === 'camera') openCamera(el); } } } });
-  ui.canvas.addEventListener('mousedown', event => { if (event.target === ui.canvas || event.target === ui.elements || event.target === ui.overlay) select(null); });
+  ui.elements.addEventListener('click', event => { if (event.detail === 0) { const node = event.target.closest('.acs-app-device'); if (node) { const el = currentFloor().elements.find(item => item.id === Number(node.dataset.id)); if (el) { select(el.id); if (el.type === 'camera') openCamera(el); else showMenu(el); } } } });
+  ui.elements.addEventListener('contextmenu', event => {
+    const node = event.target.closest('.acs-app-device'); if (!node) return;
+    event.preventDefault();
+    const el = currentFloor().elements.find(item => item.id === Number(node.dataset.id));
+    if (el) { select(el.id); showMenu(el); }
+  });
+  ui.menu.addEventListener('mousedown', event => event.stopPropagation());
+  ui.menu.addEventListener('click', event => {
+    const button = event.target.closest('.acs-app-device-menu-action');
+    const el = currentFloor().elements.find(item => item.id === Number(ui.menu.dataset.id));
+    if (button && el) changeDeviceState(el, button.dataset.state);
+  });
+  ui.canvas.addEventListener('mousedown', event => { if (event.target === ui.canvas || event.target === ui.elements || event.target === ui.overlay) { hideMenu(); select(null); } });
   ui.properties.addEventListener('input', event => {
     const input = event.target.closest('.acs-app-slider');
     const el = selectedElement();
     if (!input || !el) return;
     el[input.dataset.property] = Number(input.value);
-    $('acs-value-' + input.dataset.property).textContent = input.value + (input.dataset.property === 'rotation' ? '°' : ' px');
+    $('acs-value-' + input.dataset.property).textContent = `${fa(input.value)} ${input.dataset.property === 'rotation' ? 'درجه' : 'پیکسل'}`;
     input.style.setProperty('--acs-progress', `${((Number(input.value)-Number(input.min))/(Number(input.max)-Number(input.min)))*100}%`);
     renderElements(); persist();
   });
   ui.properties.addEventListener('click', event => {
+    const action = event.target.closest('.acs-app-state-button');
+    if (action) { const el = selectedElement(); if (el) changeDeviceState(el, action.dataset.state); return; }
     if (!event.target.closest('#acs-delete')) return;
     const el = selectedElement(); if (!el) return;
     currentFloor().elements = currentFloor().elements.filter(item => item.id !== el.id);
     if (breachedId === el.id) breachedId = null;
-    stopTracking(); selectedId = null; render(); persist(); setStatus(`${catalog[el.type].name} #${el.id} removed`);
+    stopTracking(); hideMenu(); selectedId = null; render(); persist(); setStatus(`${catalog[el.type].name} شماره ${fa(el.id)} حذف شد`);
   });
   $('acs-upload').addEventListener('change', event => {
     const file = event.target.files?.[0]; if (!file) return;
-    if (!['image/png','image/jpeg','image/webp','image/gif','image/svg+xml'].includes(file.type)) { toast('Unsupported image', 'Choose a PNG, JPG, WEBP, GIF or SVG image.', true); event.target.value = ''; return; }
+    if (!['image/png','image/jpeg','image/webp','image/gif','image/svg+xml'].includes(file.type)) { toast('فرمت تصویر پشتیبانی نمی‌شود', 'فایل PNG، JPG، WEBP، GIF یا SVG انتخاب کنید.', true); event.target.value = ''; return; }
     const floorId = appState.currentFloor;
     const reader = new FileReader();
-    reader.onerror = () => toast('Upload failed', 'The selected image could not be read.', true);
+    reader.onerror = () => toast('خطا در بارگذاری', 'خواندن تصویر انتخاب‌شده ممکن نیست.', true);
     reader.onload = () => {
       const image = new Image();
-      image.onerror = () => toast('Invalid image', 'The selected file could not be decoded.', true);
+      image.onerror = () => toast('تصویر نامعتبر', 'نمایش فایل انتخاب‌شده ممکن نیست.', true);
       image.onload = () => {
         const floor = appState.floors[floorId];
         floor.background = reader.result;
         floor.imageWidth = image.naturalWidth;
         floor.imageHeight = image.naturalHeight;
         if (floorId === appState.currentFloor) { stopTracking(); render(); }
-        persist(); toast('Floor plan uploaded', `${file.name} is now the background for Floor ${floorId}.`);
+        persist(); toast('نقشه بارگذاری شد', `${file.name} برای طبقه ${fa(floorId)} ثبت شد.`);
       };
       image.src = reader.result;
     };
@@ -255,40 +295,41 @@
     event.target.value = '';
   });
   ui.floor.addEventListener('change', () => {
-    stopTracking(); clearBreach(); selectedId = null;
+    stopTracking(); clearBreach(); hideMenu(); selectedId = null;
     appState.currentFloor = Number(ui.floor.value);
-    ui.scroll.scrollTo(0, 0); render(); persist(); setStatus(`Viewing Floor ${appState.currentFloor}`);
+    ui.scroll.scrollTo(0, 0); render(); persist(); setStatus(`نمایش طبقه ${fa(appState.currentFloor)}`);
   });
   $('acs-save').addEventListener('click', () => persist(true));
   function setDoors(state) {
     const doors = currentFloor().elements.filter(el => el.type === 'door');
     doors.forEach(el => { el.state = state; });
     renderElements(); renderProperties(); persist();
-    setStatus(`All doors ${state} on Floor ${appState.currentFloor}`);
-    toast(`Doors ${state}`, `${doors.length} door${doors.length === 1 ? '' : 's'} updated on Floor ${appState.currentFloor}.`);
+    hideMenu();
+    setStatus(`همه درهای طبقه ${fa(appState.currentFloor)} ${state === 'locked' ? 'قفل' : 'باز'} شدند`);
+    toast('وضعیت درها تغییر کرد', `${fa(doors.length)} در در طبقه ${fa(appState.currentFloor)} ${state === 'locked' ? 'قفل' : 'باز'} شد.`);
   }
   $('acs-lock-all').addEventListener('click', () => setDoors('locked'));
   $('acs-unlock-all').addEventListener('click', () => setDoors('unlocked'));
   function clearBreach() { clearTimeout(breachTimer); breachTimer = null; breachedId = null; renderElements(); }
   $('acs-breach').addEventListener('click', () => {
     const candidates = currentFloor().elements.filter(el => el.type === 'gate' || el.type === 'reader');
-    if (!candidates.length) { toast('No access points available', 'Place a gate or card reader to trigger a breach.', true); return; }
+    if (!candidates.length) { toast('نقطه دسترسی یافت نشد', 'برای شبیه‌سازی هشدار، یک گیت یا کارت‌خوان روی نقشه قرار دهید.', true); return; }
     clearBreach();
     const el = candidates[Math.floor(Math.random() * candidates.length)];
     breachedId = el.id; renderElements();
-    const name = el.type === 'gate' ? 'Gate' : 'Card Reader';
-    toast('SECURITY ALERT', `Unauthorized access at ${name} #${el.id}`, true);
-    setStatus(`ALERT: Unauthorized access at ${name} #${el.id}`);
-    breachTimer = setTimeout(() => { breachedId = null; renderElements(); setStatus('All systems nominal'); }, 6500);
+    const name = catalog[el.type].name;
+    toast('هشدار امنیتی', `دسترسی غیرمجاز در ${name} شماره ${fa(el.id)}`, true);
+    setStatus(`هشدار: دسترسی غیرمجاز در ${name} شماره ${fa(el.id)}`);
+    breachTimer = setTimeout(() => { breachedId = null; renderElements(); setStatus('همه سامانه‌ها در وضعیت عادی هستند'); }, 6500);
   });
   function openCamera(el) {
     previousFocus = document.activeElement;
-    ui.modalTitle.textContent = `Camera #${el.id} · Live feed`;
+    ui.modalTitle.textContent = `دوربین شماره ${fa(el.id)} · پخش زنده`;
     ui.modal.classList.remove('acs-app-hidden');
     updateVideoTime(); $('acs-close-modal').focus();
   }
   function closeCamera() { ui.modal.classList.add('acs-app-hidden'); previousFocus?.focus(); }
-  function updateVideoTime() { ui.videoTime.textContent = new Date().toLocaleString('en-GB', { hour12: false }); }
+  function updateVideoTime() { ui.videoTime.textContent = new Date().toLocaleString('fa-IR', { hour12: false }); }
   setInterval(() => { if (!ui.modal.classList.contains('acs-app-hidden')) updateVideoTime(); }, 1000);
   $('acs-close-modal').addEventListener('click', closeCamera);
   ui.modal.addEventListener('click', event => { if (event.target === ui.modal) closeCamera(); });
@@ -303,20 +344,20 @@
   $('acs-track').addEventListener('click', () => {
     stopTracking();
     const devices = [...currentFloor().elements];
-    if (devices.length < 3) { toast('Not enough devices', 'Place at least 3 devices to simulate a route.', true); return; }
+    if (devices.length < 3) { toast('تجهیزات کافی نیست', 'برای شبیه‌سازی مسیر، دست‌کم ۳ تجهیز روی نقشه قرار دهید.', true); return; }
     // Shuffle without changing the stored element order.
     for (let i = devices.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [devices[i],devices[j]] = [devices[j],devices[i]]; }
     const points = devices.slice(0, 3);
-    ui.entries.innerHTML = '<div class="acs-app-tracking-wait">Locating personnel signal…</div>';
+    ui.entries.innerHTML = '<div class="acs-app-tracking-wait">در حال یافتن موقعیت پرسنل…</div>';
     ui.tracking.classList.remove('acs-app-hidden');
-    const entries = ['08:00 AM - Authenticated at Main Gate', '08:02 AM - Passed Corridor Door', '08:05 AM - Last Known Location: Server Room'];
+    const entries = ['۰۸:۰۰ - احراز هویت در گیت اصلی', '۰۸:۰۲ - عبور از در راهرو', '۰۸:۰۵ - آخرین موقعیت: اتاق سرور'];
     entries.forEach((entry, index) => trackingTimers.push(setTimeout(() => {
       if (index === 0) ui.entries.replaceChildren();
       const line = document.createElement('div'); line.className = 'acs-app-tracking-entry';
       const dot = document.createElement('span'); dot.className = 'acs-app-tracking-entry-dot';
       const text = document.createElement('span'); text.textContent = entry;
       line.append(dot, text); ui.entries.append(line);
-      if (index === 2) setStatus('Personnel last seen: Server Room');
+      if (index === 2) setStatus('آخرین موقعیت پرسنل: اتاق سرور');
     }, [300, 2100, 4200][index])));
     const canvasRect = ui.canvas.getBoundingClientRect();
     const w = canvasRect.width, h = canvasRect.height;
@@ -336,8 +377,38 @@
       trackingFrame = requestAnimationFrame(tick);
     }
     trackingFrame = requestAnimationFrame(tick);
-    setStatus('Tracking Jordan Davis through the building');
+    setStatus('ردیابی حرکت پرسنل در ساختمان');
   });
-  window.addEventListener('resize', () => { if (trackingFrame !== null) stopTracking(); });
+  const mapFrame = document.querySelector('.acs-app-map-frame');
+  const fullscreenButton = $('acs-fullscreen');
+  function updateFullscreenButton() {
+    const expanded = document.fullscreenElement === mapFrame || mapFrame.classList.contains('acs-app-map-fullscreen');
+    $('acs-fullscreen-label').textContent = expanded ? 'خروج از تمام‌صفحه' : 'تمام‌صفحه';
+    fullscreenButton.setAttribute('aria-label', expanded ? 'خروج از تمام‌صفحه نقشه' : 'تمام‌صفحه کردن نقشه');
+    fullscreenButton.setAttribute('aria-pressed', String(expanded));
+  }
+  fullscreenButton.addEventListener('click', async () => {
+    if (document.fullscreenElement === mapFrame) { await document.exitFullscreen(); return; }
+    if (mapFrame.classList.contains('acs-app-map-fullscreen')) { mapFrame.classList.remove('acs-app-map-fullscreen'); updateFullscreenButton(); return; }
+    try {
+      if (!mapFrame.requestFullscreen) throw new Error('Fullscreen unavailable');
+      await mapFrame.requestFullscreen();
+    } catch {
+      // Embedded portals may deny Fullscreen API; use a contained CSS fallback.
+      mapFrame.classList.add('acs-app-map-fullscreen');
+    }
+    updateFullscreenButton();
+  });
+  document.addEventListener('fullscreenchange', updateFullscreenButton);
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') {
+      hideMenu();
+      if (mapFrame.classList.contains('acs-app-map-fullscreen')) { mapFrame.classList.remove('acs-app-map-fullscreen'); updateFullscreenButton(); }
+    }
+  });
+  document.addEventListener('mousedown', event => {
+    if (!event.target.closest('.acs-app-device-menu') && !event.target.closest('.acs-app-device')) hideMenu();
+  });
+  window.addEventListener('resize', () => { if (trackingFrame !== null) stopTracking(); hideMenu(); });
   render();
 })();

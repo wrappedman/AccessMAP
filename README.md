@@ -1,24 +1,23 @@
-# Sentinel — Access Map Builder
+# بعد پنجم | سازنده نقشه کنترل دسترسی
 
-A self-contained access-control and personnel-location map builder. Built with only HTML, CSS, and ES6 JavaScript. No build step, third-party packages, external fonts, or network services are required.
+ماژول مستقل نقشه کنترل دسترسی و ردیابی پرسنل، با HTML، CSS و JavaScript خالص. هیچ کتابخانه، وابستگی یا مرحله ساختی لازم ندارد. ریشه ماژول (`#acs-builder-app`) در جریان عادی صفحه قرار دارد و برای قرارگیری در وب‌سایت اصلی مناسب است؛ تمام کلاس‌ها با `acs-app-` آغاز می‌شوند.
 
-## Run
+## اجرا
 
-Open `index.html` in a browser, or serve the folder with a static file server:
+فایل `index.html` را در مرورگر باز کنید یا پوشه را با یک سرور استاتیک ارائه دهید:
 
 ```sh
 python3 -m http.server 8080
 ```
 
-Then visit `http://localhost:8080`.
+## امکانات
 
-## Use
+- سه طبقه مستقل با نقشه و تجهیزات جداگانه؛ تصویر نمونه و تجهیزات آماده برای نمایش اولیه.
+- بارگذاری نقشه با فرمت‌های PNG، JPG، WEBP، GIF یا SVG؛ نسبت تصویر بوم براساس فایل بارگذاری‌شده تنظیم می‌شود.
+- کشیدن تجهیزات از جعبه‌ابزار روی نقشه، جابه‌جایی و تنظیم اندازه و چرخش آن‌ها. با Enter یا Space نیز می‌توان تجهیز انتخاب‌شده در جعبه‌ابزار را به مرکز نقشه افزود.
+- کلیک روی **در، گیت یا کارت‌خوان** برای باز شدن منوی کوچک تغییر وضعیت کنار تجهیز. برای **دوربین**، کلیک تصویر نمایشی را باز می‌کند و راست‌کلیک منوی وضعیت را نشان می‌دهد. وضعیت همه تجهیزات در پنل ویژگی‌ها هم قابل تغییر است.
+- تمام‌صفحه کردن نقشه با دکمه بالای نقشه؛ در محیط‌هایی که Fullscreen API را مسدود می‌کنند، حالت تمام‌صفحه جایگزین فعال می‌شود.
+- شبیه‌سازی هشدار امنیتی، نمایش دوربین و ردیابی پرسنل با مسیر متحرک.
+- ذخیره خودکار تنظیمات و تصویر نقشه در `localStorage` همین مرورگر. تصاویر بسیار بزرگ ممکن است از سقف فضای ذخیره‌سازی مرورگر عبور کنند؛ در این حالت پیام خطا نمایش داده می‌شود.
 
-- Select one of three floors. Each floor has its own devices and floor-plan image.
-- Drag a device from the toolbox onto the map. Drag existing devices to reposition them; click to inspect. Keyboard users can focus a palette item and press Enter or Space to place it at the center of the map.
-- Upload a PNG, JPEG, WEBP, GIF, or SVG floor plan. Image dimensions determine the canvas aspect ratio.
-- Use the inspector to change a device's width, height, or rotation, or delete it.
-- Click a camera for a simulated CCTV feed. Use the top bar to lock/unlock doors, trigger an access alert, or run a personnel-tracking walkthrough.
-- Changes save automatically to browser `localStorage`; **Save Config** also confirms the current state. Browser storage quotas vary, so very large uploaded images may not persist. Everything stays on the local device.
-
-The included illustrated floor plan and sample devices make the demo usable immediately. Device center coordinates are stored as percentages so placements follow canvas resizing.
+مختصات مرکز تجهیزات به‌صورت درصدی ذخیره می‌شود تا با تغییر اندازه نقشه، جای آن‌ها حفظ شود.
