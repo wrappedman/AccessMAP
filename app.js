@@ -117,6 +117,8 @@
   function updateCanvas() {
     const floor = currentFloor();
     ui.floor.value = String(appState.currentFloor);
+    $('acs-floor-label').textContent = ui.floor.selectedOptions[0].textContent;
+    document.querySelectorAll('.acs-app-floor-option').forEach(option => option.setAttribute('aria-selected', String(Number(option.dataset.floor) === appState.currentFloor)));
     $('acs-floor-crumb').textContent = floorNames[appState.currentFloor][0];
     $('acs-map-name').textContent = floorNames[appState.currentFloor][1];
     $('acs-device-count').textContent = `${fa(floor.elements.length)} تجهیز`;
@@ -205,7 +207,7 @@
       positionWithinCanvas(dragging.el, event.clientX - dragging.offsetX, event.clientY - dragging.offsetY);
       const node = ui.elements.querySelector(`[data-id="${dragging.el.id}"]`);
       if (node) { node.style.left = `${dragging.el.x}%`; node.style.top = `${dragging.el.y}%`; }
-      if (trackingFrame) stopTracking(); // A route is only valid for the positions at simulation start.
+      if (!ui.tracking.classList.contains('acs-app-hidden')) stopTracking(); // A route is only valid for the original device positions.
     }
   }
   function startDrag(action) { dragging = action; document.addEventListener('mousemove', moveDrag); document.addEventListener('mouseup', endDrag); }
@@ -294,6 +296,36 @@
     reader.readAsDataURL(file);
     event.target.value = '';
   });
+  const floorTrigger = $('acs-floor-trigger');
+  const floorMenu = $('acs-floor-menu');
+  const floorChoices = [...floorMenu.querySelectorAll('.acs-app-floor-option')];
+  function closeFloorMenu() { floorMenu.classList.add('acs-app-hidden'); floorTrigger.setAttribute('aria-expanded', 'false'); }
+  function openFloorMenu(focusChoice = false) {
+    floorMenu.classList.remove('acs-app-hidden'); floorTrigger.setAttribute('aria-expanded', 'true');
+    if (focusChoice) floorChoices[appState.currentFloor - 1].focus();
+  }
+  floorTrigger.addEventListener('click', () => {
+    if (floorMenu.classList.contains('acs-app-hidden')) openFloorMenu(); else closeFloorMenu();
+  });
+  floorTrigger.addEventListener('keydown', event => {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault(); openFloorMenu(true);
+    }
+  });
+  floorMenu.addEventListener('click', event => {
+    const option = event.target.closest('.acs-app-floor-option'); if (!option) return;
+    ui.floor.value = option.dataset.floor;
+    if (Number(ui.floor.value) !== appState.currentFloor) ui.floor.dispatchEvent(new Event('change', { bubbles: true }));
+    closeFloorMenu(); floorTrigger.focus();
+  });
+  floorMenu.addEventListener('keydown', event => {
+    const index = floorChoices.indexOf(document.activeElement);
+    if (event.key === 'Escape') { event.preventDefault(); closeFloorMenu(); floorTrigger.focus(); }
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault(); floorChoices[(index + (event.key === 'ArrowDown' ? 1 : -1) + floorChoices.length) % floorChoices.length].focus();
+    }
+    if (event.key === 'Home' || event.key === 'End') { event.preventDefault(); floorChoices[event.key === 'Home' ? 0 : floorChoices.length - 1].focus(); }
+  });
   ui.floor.addEventListener('change', () => {
     stopTracking(); clearBreach(); hideMenu(); selectedId = null;
     appState.currentFloor = Number(ui.floor.value);
@@ -333,7 +365,7 @@
   setInterval(() => { if (!ui.modal.classList.contains('acs-app-hidden')) updateVideoTime(); }, 1000);
   $('acs-close-modal').addEventListener('click', closeCamera);
   ui.modal.addEventListener('click', event => { if (event.target === ui.modal) closeCamera(); });
-  document.addEventListener('keydown', event => { if (event.key === 'Escape' && !ui.modal.classList.contains('acs-app-hidden')) closeCamera(); });
+  document.addEventListener('keydown', event => { if (event.key === 'Escape' && !ui.modal.classList.contains('acs-app-hidden')) { event.preventDefault(); closeCamera(); } });
 
   function stopTracking() {
     trackingTimers.forEach(clearTimeout); trackingTimers = [];
@@ -345,41 +377,58 @@
     stopTracking();
     const devices = [...currentFloor().elements];
     if (devices.length < 3) { toast('تجهیزات کافی نیست', 'برای شبیه‌سازی مسیر، دست‌کم ۳ تجهیز روی نقشه قرار دهید.', true); return; }
-    // Shuffle without changing the stored element order.
-    for (let i = devices.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [devices[i],devices[j]] = [devices[j],devices[i]]; }
-    const points = devices.slice(0, 3);
+    // Prefer a logical entrance → corridor → destination journey. Fall back to other devices if needed.
+    const gate = devices.filter(el => el.type === 'gate').sort((a, b) => b.y - a.y)[0];
+    const door = devices.filter(el => el.type === 'door').sort((a, b) => Math.hypot(a.x - 62, a.y - 55) - Math.hypot(b.x - 62, b.y - 55))[0];
+    const camera = devices.filter(el => el.type === 'camera').sort((a, b) => Math.hypot(a.x - 84, a.y - 23) - Math.hypot(b.x - 84, b.y - 23))[0];
+    const points = [gate, door, camera].filter((el, index, list) => el && list.indexOf(el) === index);
+    for (const el of devices) { if (points.length === 3) break; if (!points.includes(el)) points.push(el); }
     ui.entries.innerHTML = '<div class="acs-app-tracking-wait">در حال یافتن موقعیت پرسنل…</div>';
     ui.tracking.classList.remove('acs-app-hidden');
     const entries = ['۰۸:۰۰ - احراز هویت در گیت اصلی', '۰۸:۰۲ - عبور از در راهرو', '۰۸:۰۵ - آخرین موقعیت: اتاق سرور'];
     entries.forEach((entry, index) => trackingTimers.push(setTimeout(() => {
       if (index === 0) ui.entries.replaceChildren();
       const line = document.createElement('div'); line.className = 'acs-app-tracking-entry';
-      const dot = document.createElement('span'); dot.className = 'acs-app-tracking-entry-dot';
+      const marker = document.createElement('span'); marker.className = 'acs-app-tracking-entry-dot';
       const text = document.createElement('span'); text.textContent = entry;
-      line.append(dot, text); ui.entries.append(line);
+      line.append(marker, text); ui.entries.append(line);
       if (index === 2) setStatus('آخرین موقعیت پرسنل: اتاق سرور');
-    }, [300, 2100, 4200][index])));
-    const canvasRect = ui.canvas.getBoundingClientRect();
-    const w = canvasRect.width, h = canvasRect.height;
-    ui.overlay.setAttribute('viewBox', `0 0 ${w} ${h}`);
-    const coords = points.map(el => [w * el.x / 100, h * el.y / 100]);
-    const route = `M ${coords[0][0]} ${coords[0][1]} L ${coords[1][0]} ${coords[1][1]} L ${coords[2][0]} ${coords[2][1]}`;
-    const glow = document.createElementNS(SVG_NS, 'path'); glow.setAttribute('d', route); glow.setAttribute('class', 'acs-app-route-glow');
-    const path = document.createElementNS(SVG_NS, 'path'); path.setAttribute('d', route); path.setAttribute('class', 'acs-app-route-line'); path.setAttribute('pathLength', '100');
-    const dot = document.createElementNS(SVG_NS, 'circle'); dot.setAttribute('r', '8'); dot.setAttribute('class', 'acs-app-route-dot');
-    ui.overlay.append(glow, path, dot);
+    }, [150, 2600, 5200][index])));
+
+    // Percent-based viewBox stays aligned with device centers even when the map is resized/fullscreen.
+    ui.overlay.setAttribute('viewBox', '0 0 1000 1000');
+    ui.overlay.setAttribute('preserveAspectRatio', 'none');
+    const route = `M ${points[0].x * 10} ${points[0].y * 10} L ${points[1].x * 10} ${points[1].y * 10} L ${points[2].x * 10} ${points[2].y * 10}`;
+    const svg = (tag, attributes) => {
+      const element = document.createElementNS(SVG_NS, tag);
+      for (const [name, value] of Object.entries(attributes)) element.setAttribute(name, String(value));
+      return element;
+    };
+    const glow = svg('path', { d: route, class: 'acs-app-route-glow' });
+    const path = svg('path', { d: route, class: 'acs-app-route-line', pathLength: '100' });
+    ui.overlay.append(glow, path);
+    points.forEach((el, index) => {
+      const pin = svg('circle', { cx: el.x * 10, cy: el.y * 10, r: 13, class: 'acs-app-route-pin' });
+      const label = svg('text', { x: el.x * 10, y: el.y * 10 + 5, 'text-anchor': 'middle', class: 'acs-app-route-pin-label' });
+      label.textContent = fa(index + 1);
+      ui.overlay.append(pin, label);
+    });
+    const dotGlow = svg('circle', { r: 22, class: 'acs-app-route-dot-glow' });
+    const dot = svg('circle', { r: 9, class: 'acs-app-route-dot' });
+    ui.overlay.append(dotGlow, dot);
     const length = path.getTotalLength(), duration = 5200, started = performance.now();
     function tick(now) {
-      const elapsed = (now - started) % duration;
-      const progress = elapsed / duration;
+      const progress = Math.min((now - started) / duration, 1);
       const p = path.getPointAtLength(length * progress);
-      dot.setAttribute('cx', String(p.x)); dot.setAttribute('cy', String(p.y));
-      trackingFrame = requestAnimationFrame(tick);
+      for (const marker of [dotGlow, dot]) { marker.setAttribute('cx', String(p.x)); marker.setAttribute('cy', String(p.y)); }
+      if (progress < 1) trackingFrame = requestAnimationFrame(tick);
+      else trackingFrame = null;
     }
     trackingFrame = requestAnimationFrame(tick);
     setStatus('ردیابی حرکت پرسنل در ساختمان');
   });
   const mapFrame = document.querySelector('.acs-app-map-frame');
+  mapFrame.append(ui.modal, ui.tracking);
   const fullscreenButton = $('acs-fullscreen');
   function updateFullscreenButton() {
     const expanded = document.fullscreenElement === mapFrame || mapFrame.classList.contains('acs-app-map-fullscreen');
@@ -401,14 +450,16 @@
   });
   document.addEventListener('fullscreenchange', updateFullscreenButton);
   document.addEventListener('keydown', event => {
+    if (event.defaultPrevented) return;
     if (event.key === 'Escape') {
-      hideMenu();
+      hideMenu(); closeFloorMenu();
       if (mapFrame.classList.contains('acs-app-map-fullscreen')) { mapFrame.classList.remove('acs-app-map-fullscreen'); updateFullscreenButton(); }
     }
   });
   document.addEventListener('mousedown', event => {
     if (!event.target.closest('.acs-app-device-menu') && !event.target.closest('.acs-app-device')) hideMenu();
+    if (!event.target.closest('.acs-app-select-wrap')) closeFloorMenu();
   });
-  window.addEventListener('resize', () => { if (trackingFrame !== null) stopTracking(); hideMenu(); });
+  window.addEventListener('resize', hideMenu);
   render();
 })();
