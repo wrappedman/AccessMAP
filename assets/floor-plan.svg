@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 900" width="1400" height="900">
+  <defs>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M32 0H0V32" fill="none" stroke="#d8e2e4" stroke-width=".8"/></pattern>
+    <pattern id="hatch" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0V10" stroke="#dce5e6" stroke-width="3"/></pattern>
+  </defs>
+  <rect width="1400" height="900" fill="#eaf0f1"/><rect width="1400" height="900" fill="url(#grid)" opacity=".45"/>
+  <g font-family="Tahoma,Arial,sans-serif" fill="#6b828b">
+    <text x="84" y="58" font-size="17" font-weight="700" letter-spacing="0">نقشه بال شمالی / طبقه همکف</text>
+    <text x="1316" y="58" text-anchor="end" font-size="13" letter-spacing="0">مقیاس ۱:۲۵۰  •  شمال ↑</text>
+    <text x="84" y="854" font-size="12" letter-spacing="0">مدیریت تأسیسات / ساختمان الف</text>
+    <text x="1316" y="854" text-anchor="end" font-size="12" letter-spacing="0">نسخه ۰۴ / نقشه ۰۱</text>
+  </g>
+  <!-- building envelope and rooms -->
+  <rect x="83" y="90" width="1234" height="720" rx="2" fill="#d4e0e2" stroke="#8199a1" stroke-width="3"/>
+  <rect x="104" y="111" width="1192" height="678" fill="#f8faf9"/>
+  <rect x="104" y="382" width="1192" height="131" fill="#e8f0f0"/>
+  <path d="M104 382H1296M104 513H1296" stroke="#a3b5b9" stroke-width="7"/>
+  <path d="M392 111V382M660 111V382M996 111V382M415 513V789M745 513V789M1005 513V789" stroke="#a3b5b9" stroke-width="7"/>
+  <!-- door gaps & swing arcs -->
+  <g stroke="#e8f0f0" stroke-width="10"><path d="M245 382h60M505 382h60M805 382h60M1120 382h60M250 513h60M555 513h60M850 513h60M1120 513h60"/></g>
+  <g fill="none" stroke="#92adb2" stroke-width="2" opacity=".8">
+    <path d="M245 382v-57a57 57 0 0 1 57 57M505 382v-57a57 57 0 0 1 57 57M805 382v-57a57 57 0 0 1 57 57M1120 382v-57a57 57 0 0 1 57 57"/>
+    <path d="M250 513v57a57 57 0 0 0 57-57M555 513v57a57 57 0 0 0 57-57M850 513v57a57 57 0 0 0 57-57M1120 513v57a57 57 0 0 0 57-57"/>
+  </g>
+  <!-- reception desk -->
+  <path d="M145 262h190v55H145z" fill="#dce8e8" stroke="#b3c7c9" stroke-width="3"/><path d="M162 279h156" stroke="#b3c7c9" stroke-width="3"/>
+  <circle cx="170" cy="210" r="16" fill="#e1e9e9" stroke="#b9c9cb"/><circle cx="300" cy="210" r="16" fill="#e1e9e9" stroke="#b9c9cb"/>
+  <!-- security desks -->
+  <rect x="442" y="237" width="168" height="65" rx="4" fill="#dce8e8" stroke="#b3c7c9" stroke-width="3"/><rect x="462" y="254" width="46" height="29" rx="2" fill="#c5d7da"/><rect x="535" y="254" width="46" height="29" rx="2" fill="#c5d7da"/>
+  <!-- meeting table -->
+  <rect x="755" y="224" width="155" height="72" rx="30" fill="#dce8e8" stroke="#b3c7c9" stroke-width="3"/>
+  <g fill="#c5d7da"><circle cx="780" cy="205" r="10"/><circle cx="826" cy="205" r="10"/><circle cx="872" cy="205" r="10"/><circle cx="780" cy="315" r="10"/><circle cx="826" cy="315" r="10"/><circle cx="872" cy="315" r="10"/></g>
+  <!-- server racks -->
+  <g fill="#d4e2e3" stroke="#aac0c3" stroke-width="2"><rect x="1040" y="228" width="46" height="109" rx="2"/><rect x="1100" y="228" width="46" height="109" rx="2"/><rect x="1160" y="228" width="46" height="109" rx="2"/><rect x="1220" y="228" width="46" height="109" rx="2"/></g>
+  <g stroke="#9cb5ba" stroke-width="2"><path d="M1048 245h30m-30 19h30m-30 19h30m-30 19h30m30-57h30m-30 19h30m-30 19h30m-30 19h30m30-57h30m-30 19h30m-30 19h30m-30 19h30m30-57h30m-30 19h30m-30 19h30m-30 19h30"/></g>
+  <!-- loading / storage -->
+  <g fill="url(#hatch)" stroke="#bfcecf" stroke-width="2"><rect x="147" y="622" width="70" height="80"/><rect x="233" y="622" width="70" height="80"/><rect x="319" y="622" width="52" height="80"/></g>
+  <!-- office furniture -->
+  <g fill="#dce8e8" stroke="#b3c7c9" stroke-width="2"><rect x="462" y="618" width="92" height="45" rx="3"/><rect x="585" y="618" width="92" height="45" rx="3"/><rect x="462" y="700" width="92" height="45" rx="3"/><rect x="585" y="700" width="92" height="45" rx="3"/><rect x="788" y="622" width="78" height="48" rx="3"/><rect x="891" y="622" width="78" height="48" rx="3"/><rect x="788" y="708" width="78" height="48" rx="3"/><rect x="891" y="708" width="78" height="48" rx="3"/></g>
+  <!-- archive shelves -->
+  <g fill="#dce8e8" stroke="#b3c7c9" stroke-width="2"><rect x="1045" y="615" width="32" height="125"/><rect x="1100" y="615" width="32" height="125"/><rect x="1155" y="615" width="32" height="125"/><rect x="1210" y="615" width="32" height="125"/></g>
+  <!-- corridor direction -->
+  <path d="M160 446h1075" stroke="#b8cacc" stroke-width="2" stroke-dasharray="8 10"/>
+  <path d="m1220 438 15 8-15 8" fill="none" stroke="#b8cacc" stroke-width="2"/>
+  <!-- labels -->
+  <g font-family="Tahoma,Arial,sans-serif" fill="#6d838b" text-anchor="middle">
+    <g font-size="14" font-weight="700" letter-spacing="0"><text x="248" y="159">پذیرش</text><text x="525" y="159">مرکز حراست</text><text x="828" y="159">اتاق جلسه</text><text x="1145" y="159">اتاق سرور</text><text x="259" y="568">محوطه بارگیری</text><text x="580" y="568">دفتر غربی</text><text x="875" y="568">فضای کار باز</text><text x="1150" y="568">بایگانی</text></g>
+    <g font-size="12" fill="#9bafb3" letter-spacing="1"><text x="248" y="182">A-101</text><text x="525" y="182">A-102</text><text x="828" y="182">A-103</text><text x="1145" y="182">A-104</text><text x="259" y="590">A-105</text><text x="580" y="590">A-106</text><text x="875" y="590">A-107</text><text x="1150" y="590">A-108</text></g>
+    <text x="700" y="433" font-size="15" font-weight="700" letter-spacing="0" fill="#91a8ad">راهروی اصلی</text>
+  </g>
+  <!-- entry -->
+  <path d="M625 789h150" stroke="#f8faf9" stroke-width="12"/><path d="M625 790v-65a65 65 0 0 1 65 65M775 790v-65a65 65 0 0 0-65 65" fill="none" stroke="#93aeb3" stroke-width="2"/>
+  <path d="M700 827v-27m-9 9 9-9 9 9" stroke="#6b9299" stroke-width="3" fill="none"/>
+  <text x="700" y="856" text-anchor="middle" font-family="Tahoma,Arial,sans-serif" font-size="11" letter-spacing="0" fill="#668089">ورودی اصلی</text>
+</svg>
